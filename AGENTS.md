@@ -1,5 +1,5 @@
 # VS Code Agents Instructions
 
-This file provides instructions for AI coding agents working with the VS Code codebase.
+Use `.github/copilot-instructions.md` as the primary workspace instruction file for this repository.
 
-For detailed project overview, architecture, coding guidelines, and validation steps, see the [Copilot Instructions](.github/copilot-instructions.md).
+When working in a specific area, also load any closer `AGENTS.md` file in that subtree and any matching files under `.github/instructions/`.

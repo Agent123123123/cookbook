@@ -9,7 +9,7 @@ import { IProcessEnvironment, isMacintosh } from '../../../base/common/platform.
 import { URI } from '../../../base/common/uri.js';
 import { whenDeleted } from '../../../base/node/pfs.js';
 import { IConfigurationService } from '../../configuration/common/configuration.js';
-import { NativeParsedArgs } from '../../environment/common/argv.js';
+import { NativeParsedArgs, shouldStartInAgentMode, toAgentModeWindowArgs } from '../../environment/common/argv.js';
 import { isLaunchedFromCli } from '../../environment/node/argvHelper.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 import { ILogService } from '../../log/common/log.js';
@@ -145,9 +145,13 @@ export class LaunchMainService implements ILaunchMainService {
 			await this.windowsMainService.openExtensionDevelopmentHostWindow(args.extensionDevelopmentPath, baseConfig);
 		}
 
-		// Sessions window
-		else if (args['sessions'] && this.productService.quality !== 'stable') {
-			usedWindows = await this.windowsMainService.openSessionsWindow({ context, contextWindowId: undefined });
+		// Open directly in Agent Mode inside the main workbench shell
+		else if (shouldStartInAgentMode(args, this.productService.quality !== 'stable')) {
+			usedWindows = await this.windowsMainService.open({
+				...baseConfig,
+				cli: toAgentModeWindowArgs(args),
+				forceNewWindow: true,
+			});
 		}
 
 		// Start without file/folder arguments

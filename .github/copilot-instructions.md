@@ -1,151 +1,86 @@
-# VS Code Copilot Instructions
+# VS Code Workspace Instructions
 
-## Project Overview
+These are the primary workspace instructions for the VS Code repo. Keep them concise, and follow more specific guidance from matching files under `.github/instructions/`, relevant skill files, and any closer `AGENTS.md` files in subfolders.
 
-Visual Studio Code is built with a layered architecture using TypeScript, web APIs and Electron, combining web technologies with native app capabilities. The codebase is organized into key architectural layers:
+## Codebase Map
 
-### Root Folders
-- `src/`: Main TypeScript source code with unit tests in `src/vs/*/test/` folders
-- `build/`: Build scripts and CI/CD tools
-- `extensions/`: Built-in extensions that ship with VS Code
-- `test/`: Integration tests and test infrastructure
-- `scripts/`: Development and build scripts
-- `resources/`: Static resources (icons, themes, etc.)
-- `out/`: Compiled JavaScript output (generated during build)
+- `src/`: main TypeScript source, with many unit tests in `src/vs/*/test/`
+- `extensions/`: built-in extensions that ship with VS Code
+- `build/`: build, lint, and CI scripts
+- `test/`: unit, integration, smoke, and automation test infrastructure
+- `src/vs/sessions/`: sessions-first app layer that may import `vs/workbench`, but `vs/workbench` must never import back into `vs/sessions`
 
-### Core Architecture (`src/` folder)
-- `src/vs/base/` - Foundation utilities and cross-platform abstractions
-- `src/vs/platform/` - Platform services and dependency injection infrastructure
-- `src/vs/editor/` - Text editor implementation with language services, syntax highlighting, and editing features
-- `src/vs/workbench/` - Main application workbench for web and desktop
-  - `workbench/browser/` - Core workbench UI components (parts, layout, actions)
-  - `workbench/services/` - Service implementations
-  - `workbench/contrib/` - Feature contributions (git, debug, search, terminal, etc.)
-  - `workbench/api/` - Extension host and VS Code API implementation
-- `src/vs/code/` - Electron main process specific implementation
-- `src/vs/server/` - Server specific implementation
-- `src/vs/sessions/` - Agent sessions window, a dedicated workbench layer for agentic workflows (sits alongside `vs/workbench`, may import from it but not vice versa)
+Useful references:
 
-The core architecture follows these principles:
-- **Layered architecture** - from `base`, `platform`, `editor`, to `workbench`
-- **Dependency injection** - Services are injected through constructor parameters
-    - If non-service parameters are needed, they need to come after the service parameters
-- **Contribution model** - Features contribute to registries and extension points
-- **Cross-platform compatibility** - Abstractions separate platform-specific code
+- `README.md` and `CONTRIBUTING.md` for contributor workflow
+- `test/README.md`, `test/unit/README.md`, `test/integration/browser/README.md`, and `test/smoke/README.md` for test entry points
+- `src/vs/sessions/README.md` and `src/vs/sessions/contrib/remoteAgentHost/ARCHITECTURE.md` for sessions-specific architecture
+- `doc/2026-03-21-ai-ide-ui-trimming-spec.md`, `doc/2026-03-22-opencode-native-chat-ui_plan.md`, and `doc/2026-03-22-opencode-native-chat-ui.md` for the AI IDE product definition and implementation roadmap
 
-### Built-in Extensions (`extensions/` folder)
-The `extensions/` directory contains first-party extensions that ship with VS Code:
-- **Language support** - `typescript-language-features/`, `html-language-features/`, `css-language-features/`, etc.
-- **Core features** - `git/`, `debug-auto-launch/`, `emmet/`, `markdown-language-features/`
-- **Themes** - `theme-*` folders for default color themes
-- **Development tools** - `extension-editing/`, `vscode-api-tests/`
+## AI IDE Product Direction
 
-Each extension follows the standard VS Code extension structure with `package.json`, TypeScript sources, and contribution points to extend the workbench through the Extension API.
+- Treat the product as a single OSS workbench shell, not a dual-shell app.
+- `Editor Mode` is the baseline OSS experience; `Agent Mode` is an AI-first layout mode inside that same shell.
+- Do not treat `src/vs/sessions` as the final product shell. It is a reference implementation and a source of reusable agent/session/chat pieces.
+- When building AI-first experiences, preserve a clean boundary between workbench shell concerns, agent session domain state, and view adapters.
+- Follow the decision records in the `doc/` specs before introducing new architecture for chat, session, mode switching, or OpenCode integration.
 
-### Finding Related Code
-1. **Semantic search first**: Use file search for general concepts
-2. **Grep for exact strings**: Use grep for error messages or specific function names
-3. **Follow imports**: Check what files import the problematic module
-4. **Check test files**: Often reveal usage patterns and expected behavior
+## AI IDE Technical Path
 
-## Validating TypeScript changes
+- Phase 1 should favor reuse of existing OSS chat/session/workbench capabilities to validate the experience quickly.
+- New `Agent Mode` surfaces must not depend on OSS chat internals as their source of truth; shared state should live in an integration-owned agent session domain.
+- If the experience remains primarily linear chat, reuse of existing chat views is acceptable.
+- If sub-agents, approvals, plans, outputs, or execution state become first-class timeline objects, plan for a custom conversation view instead of overextending the existing chat adapter.
+- For OpenCode integration, prefer a single backend process per VS Code window and route multiple sessions through it; do not design around one backend process per chat session.
 
-MANDATORY: Always check for compilation errors before running any tests or validation scripts, or declaring work complete, then fix all compilation errors before moving forward.
+## Validation Before Tests
 
-- NEVER run tests if there are compilation errors
-- NEVER use `npm run compile` to compile TypeScript files
+Always check for compilation errors before running tests or declaring the work done.
 
-### TypeScript compilation steps
-- If the `#runTasks/getTaskOutput` tool is available, check the `VS Code - Build` watch task output for compilation errors. This task runs `Core - Build` and `Ext - Build` to incrementally compile VS Code TypeScript sources and built-in extensions. Start the task if it's not already running in the background.
-- If the tool is not available (e.g. in CLI environments) and you only changed code under `src/`, run `npm run compile-check-ts-native` after making changes to type-check the main VS Code sources (it validates `./src/tsconfig.json`).
-- If you changed built-in extensions under `extensions/` and the tool is not available, run the corresponding gulp task `npm run gulp compile-extensions` instead so that TypeScript errors in extensions are also reported.
-- For TypeScript changes in the `build` folder, you can simply run `npm run typecheck` in the `build` folder.
+- Prefer the `VS Code - Build` watch task to validate core sources and built-in extensions incrementally.
+- Never use `npm run compile` as a TypeScript validation step.
+- If only `src/` changed and the watch task is unavailable, use `npm run compile-check-ts-native`.
+- If `extensions/` changed and the watch task is unavailable, use `npm run gulp compile-extensions`.
+- If `build/` changed, run `npm run typecheck` in `build/`.
+- Run `npm run valid-layers-check` when imports, layering, or module boundaries may be affected.
 
-### TypeScript validation steps
-- Use the run test tool if you need to run tests. If that tool is not available, then you can use `scripts/test.sh` (or `scripts\test.bat` on Windows) for unit tests (add `--grep <pattern>` to filter tests) or `scripts/test-integration.sh` (or `scripts\test-integration.bat` on Windows) for integration tests (integration tests end with .integrationTest.ts or are in /extensions/).
-- Use `npm run valid-layers-check` to check for layering issues
+On Windows, prefer `scripts\test.bat` and `scripts\test-integration.bat` when running tests directly.
 
-## Coding Guidelines
+## Repository Conventions
 
-### Indentation
+- Use tabs, not spaces.
+- Use `camelCase` for functions, methods, properties, and locals; use `PascalCase` for types and enums.
+- Use 'single quotes' for normal strings.
+- User-facing strings must be localized via `vs/nls`, use "double quotes", and use placeholders instead of string concatenation.
+- Prefer top-level `export function` declarations over exported arrow-function constants when practical.
+- Keep local imports relative and include the `.js` or `.css` extension for ESM-compatible imports.
+- Avoid `any` and `unknown` unless absolutely necessary.
+- Reuse existing helpers and patterns before adding new abstractions or duplicated code.
 
-We use tabs, not spaces.
+## Architecture and API Rules
 
-### Naming Conventions
+- Respect the layering direction: `base` → `platform` → `editor` → `workbench` → `sessions`.
+- Service constructor parameters come first; non-service constructor parameters follow them.
+- Prefer direct service calls over using events as control flow.
+- Register disposables immediately with the right owner, typically via `DisposableStore`, `MutableDisposable`, or related helpers.
+- Use `IEditorService` instead of `IEditorGroupsService.activeGroup.openEditor`.
+- Do not reuse another component's storage keys to control that component.
+- When adding watchers, prefer correlated watchers via `fileService.createWatcher`.
+- When adding tooltips, prefer `IHoverService`.
 
-- Use PascalCase for `type` names
-- Use PascalCase for `enum` values
-- Use camelCase for `function` and `method` names
-- Use camelCase for `property` names and `local variables`
-- Use whole words in names when possible
+## Testing Guidance
 
-### Types
+- Add tests to the nearest existing suite and follow local test structure and naming conventions.
+- Keep tests consistent with nearby files; do not create a new style when an existing one is already established.
+- Prefer a small number of clear assertions, and favor snapshot-style `assert.deepStrictEqual` when it improves readability.
+- Remember that integration tests live outside the main unit-test path; many extension tests and `*.integrationTest.ts` files use the integration runners instead.
 
-- Do not export `types` or `functions` unless you need to share it across multiple components
-- Do not introduce new `types` or `values` to the global namespace
+## Working Efficiently
 
-### Comments
-
-- Use JSDoc style comments for `functions`, `interfaces`, `enums`, and `classes`
-
-### Strings
-
-- Use "double quotes" for strings shown to the user that need to be externalized (localized)
-- Use 'single quotes' otherwise
-- All strings visible to the user need to be externalized using the `vs/nls` module
-- Externalized strings must not use string concatenation. Use placeholders instead (`{0}`).
-
-### UI labels
-- Use title-style capitalization for command labels, buttons and menu items (each word is capitalized).
-- Don't capitalize prepositions of four or fewer letters unless it's the first or last word (e.g. "in", "with", "for").
-
-### Style
-
-- Use arrow functions `=>` over anonymous function expressions
-- Only surround arrow function parameters when necessary. For example, `(x) => x + x` is wrong but the following are correct:
-
-```typescript
-x => x + x
-(x, y) => x + y
-<T>(x: T, y: T) => x === y
-```
-
-- Always surround loop and conditional bodies with curly braces
-- Open curly braces always go on the same line as whatever necessitates them
-- Parenthesized constructs should have no surrounding whitespace. A single space follows commas, colons, and semicolons in those constructs. For example:
-
-```typescript
-for (let i = 0, n = str.length; i < 10; i++) {
-    if (x < 10) {
-        foo();
-    }
-}
-function f(x: number, y: string): void { }
-```
-
-- Whenever possible, use in top-level scopes `export function x(…) {…}` instead of `export const x = (…) => {…}`. One advantage of using the `function` keyword is that the stack-trace shows a good name when debugging.
-
-### Code Quality
-
-- All files must include Microsoft copyright header
-- Prefer `async` and `await` over `Promise` and `then` calls
-- All user facing messages must be localized using the applicable localization framework (for example `nls.localize()` method)
-- Don't add tests to the wrong test suite (e.g., adding to end of file instead of inside relevant suite)
-- Look for existing test patterns before creating new structures
-- Use `describe` and `test` consistently with existing patterns
-- Prefer regex capture groups with names over numbered capture groups.
-- If you create any temporary new files, scripts, or helper files for iteration, clean up these files by removing them at the end of the task
-- Never duplicate imports. Always reuse existing imports if they are present.
-- When removing an import, do not leave behind blank lines where the import was. Ensure the surrounding code remains compact.
-- Do not use `any` or `unknown` as the type for variables, parameters, or return values unless absolutely necessary. If they need type annotations, they should have proper types or interfaces defined.
-- When adding file watching, prefer correlated file watchers (via fileService.createWatcher) to shared ones.
-- When adding tooltips to UI elements, prefer the use of IHoverService service.
-- Do not duplicate code. Always look for existing utility functions, helpers, or patterns in the codebase before implementing new functionality. Reuse and extend existing code whenever possible.
-- You MUST deal with disposables by registering them immediately after creation for later disposal. Use helpers such as `DisposableStore`, `MutableDisposable` or `DisposableMap`. Do NOT register a disposable to the containing class if the object is created within a method that is called repeadedly to avoid leaks. Instead, return a `IDisposable` from such method and let the caller register it.
-- You MUST NOT use storage keys of another component only to make changes to that component. You MUST come up with proper API to change another component.
-- Use `IEditorService` to open editors instead of `IEditorGroupsService.activeGroup.openEditor` to ensure that the editor opening logic is properly followed and to avoid bypassing important features such as `revealIfOpened` or `preserveFocus`.
-- Avoid using `bind()`, `call()` and `apply()` solely to control `this` or partially apply arguments; prefer arrow functions or closures to capture the necessary context, and use these methods only when required by an API or interoperability.
-- Avoid using events to drive control flow between components. Instead, prefer direct method calls or service interactions to ensure clearer dependencies and easier traceability of logic. Events should be reserved for broadcasting state changes or notifications rather than orchestrating behavior across components.
+- Search semantically first, then use exact text search for symbols, error messages, or specific APIs.
+- Follow imports and nearby tests before inventing new patterns.
+- Link to existing documentation instead of copying it into new instruction files or comments.
 
 ## Learnings
+
 - Minimize the amount of assertions in tests. Prefer one snapshot-style `assert.deepStrictEqual` over multiple precise assertions, as they are much more difficult to understand and to update.

@@ -6,6 +6,7 @@
 import { PromptsService } from '../../../../workbench/contrib/chat/common/promptSyntax/service/promptsServiceImpl.js';
 import { PromptFilesLocator } from '../../../../workbench/contrib/chat/common/promptSyntax/utils/promptFilesLocator.js';
 import { Event } from '../../../../base/common/event.js';
+import { isWeb } from '../../../../base/common/platform.js';
 import { basename, dirname, isEqualOrParent, joinPath } from '../../../../base/common/resources.js';
 import { URI } from '../../../../base/common/uri.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
@@ -14,9 +15,9 @@ import { IConfigurationService } from '../../../../platform/configuration/common
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IWorkspaceContextService, IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
-import { HOOKS_SOURCE_FOLDER, SKILL_FILENAME, getCleanPromptName } from '../../../../workbench/contrib/chat/common/promptSyntax/config/promptFileLocations.js';
+import { AGENT_MD_FILENAME, CLAUDE_CONFIG_FOLDER, CLAUDE_LOCAL_MD_FILENAME, CLAUDE_MD_FILENAME, COPILOT_CUSTOM_INSTRUCTIONS_FILENAME, GITHUB_CONFIG_FOLDER, HOOKS_SOURCE_FOLDER, SKILL_FILENAME, getCleanPromptName } from '../../../../workbench/contrib/chat/common/promptSyntax/config/promptFileLocations.js';
 import { PromptsType } from '../../../../workbench/contrib/chat/common/promptSyntax/promptTypes.js';
-import { IAgentSkill, IPromptPath, PromptsStorage } from '../../../../workbench/contrib/chat/common/promptSyntax/service/promptsService.js';
+import { AgentFileType, type IAgentSkill, type IPromptPath, type IResolvedAgentFile, type Logger, PromptsStorage } from '../../../../workbench/contrib/chat/common/promptSyntax/service/promptsService.js';
 import { BUILTIN_STORAGE, IBuiltinPromptPath } from '../../chat/common/builtinPromptsStorage.js';
 import { IWorkbenchEnvironmentService } from '../../../../workbench/services/environment/common/environmentService.js';
 import { IPathService } from '../../../../workbench/services/path/common/pathService.js';
@@ -165,6 +166,15 @@ export class AgenticPromptsService extends PromptsService {
 	 * Skills from any other source (workspace, user, extension, internal) take precedence.
 	 */
 	public override async findAgentSkills(token: CancellationToken, sessionResource?: URI): Promise<IAgentSkill[] | undefined> {
+		if (isWeb) {
+			const builtinSkills = await this.getBuiltinSkills();
+			if (builtinSkills.length === 0) {
+				return [];
+			}
+			const disabledSkills = this.getDisabledPromptFiles(PromptsType.skill);
+			return builtinSkills.filter(s => !disabledSkills.has(s.uri));
+		}
+
 		const baseResult = await super.findAgentSkills(token, sessionResource);
 		if (baseResult === undefined) {
 			return undefined;
@@ -193,7 +203,14 @@ export class AgenticPromptsService extends PromptsService {
 	 * those overridden by user or workspace items with the same name.
 	 */
 	public override async listPromptFiles(type: PromptsType, token: CancellationToken): Promise<readonly IPromptPath[]> {
-		const baseResults = await super.listPromptFiles(type, token);
+		const baseResults = isWeb
+			? [
+				...await super.listPromptFilesForStorage(type, PromptsStorage.local, token),
+				...await super.listPromptFilesForStorage(type, PromptsStorage.extension, token),
+				...await super.listPromptFilesForStorage(type, PromptsStorage.plugin, token),
+				...await super.listPromptFilesForStorage(type, PromptsStorage.internal, token),
+			]
+			: await super.listPromptFiles(type, token);
 
 		let builtinItems: readonly IBuiltinPromptPath[];
 		if (type === PromptsType.skill) {
@@ -221,6 +238,13 @@ export class AgenticPromptsService extends PromptsService {
 		return [...baseResults, ...nonOverridden] as readonly IPromptPath[];
 	}
 
+	public override async getCustomAgents(token: CancellationToken, sessionResource?: URI) {
+		if (isWeb) {
+			return [];
+		}
+		return super.getCustomAgents(token, sessionResource);
+	}
+
 	public override async listPromptFilesForStorage(type: PromptsType, storage: PromptsStorage, token: CancellationToken): Promise<readonly IPromptPath[]> {
 		if (storage === BUILTIN_STORAGE) {
 			if (type === PromptsType.skill) {
@@ -237,6 +261,9 @@ export class AgenticPromptsService extends PromptsService {
 	 */
 	public override async getSourceFolders(type: PromptsType): Promise<readonly IPromptPath[]> {
 		const folders = await super.getSourceFolders(type);
+		if (isWeb) {
+			return folders;
+		}
 		const copilotRoot = this.getCopilotRoot();
 		// Replace any user-storage folders with the CLI-accessible ~/.copilot root
 		return folders.map(folder => {
@@ -248,6 +275,64 @@ export class AgenticPromptsService extends PromptsService {
 			}
 			return folder;
 		});
+	}
+
+	public override async listAgentInstructions(token: CancellationToken, logger: Logger | undefined): Promise<IResolvedAgentFile[]> {
+		if (!isWeb) {
+			return super.listAgentInstructions(token, logger);
+		}
+
+		const configurationService = this.instantiationService.invokeFunction(accessor => accessor.get(IConfigurationService));
+		const fileLocator = this.instantiationService.createInstance(AgenticPromptFilesLocator);
+		const resolvedAgentFiles: IResolvedAgentFile[] = [];
+		const promises: Promise<IResolvedAgentFile[]>[] = [];
+		const includeParents = configurationService.getValue('chat.useCustomizationsInParentRepositories') === true;
+		const rootFolders = await fileLocator.getWorkspaceFolderRoots(includeParents, logger);
+		const rootFiles: { fileName: string; type: AgentFileType }[] = [];
+
+		const useAgentMD = configurationService.getValue('chat.useAgentMdFiles');
+		if (!useAgentMD) {
+			logger?.logInfo('Agent MD files are disabled via configuration.');
+		} else {
+			rootFiles.push({ fileName: AGENT_MD_FILENAME, type: AgentFileType.agentsMd });
+		}
+
+		const useClaudeMD = configurationService.getValue('chat.useClaudeMdFiles');
+		if (!useClaudeMD) {
+			logger?.logInfo('Claude MD files are disabled via configuration.');
+		} else {
+			const claudeMdFile = { fileName: CLAUDE_MD_FILENAME, type: AgentFileType.claudeMd };
+			rootFiles.push(claudeMdFile);
+			rootFiles.push({ fileName: CLAUDE_LOCAL_MD_FILENAME, type: AgentFileType.claudeMd });
+			promises.push(fileLocator.findFilesInRoots(rootFolders, CLAUDE_CONFIG_FOLDER, [claudeMdFile], token, resolvedAgentFiles));
+		}
+
+		const useCopilotInstructionsFiles = configurationService.getValue('github.copilot.chat.codeGeneration.useInstructionFiles');
+		if (!useCopilotInstructionsFiles) {
+			logger?.logInfo('Copilot instructions files are disabled via configuration.');
+		} else {
+			const githubConfigFiles = [{ fileName: COPILOT_CUSTOM_INSTRUCTIONS_FILENAME, type: AgentFileType.copilotInstructionsMd }];
+			promises.push(fileLocator.findFilesInRoots(rootFolders, GITHUB_CONFIG_FOLDER, githubConfigFiles, token, resolvedAgentFiles));
+		}
+
+		promises.push(fileLocator.findFilesInRoots(rootFolders, undefined, rootFiles, token, resolvedAgentFiles));
+		await Promise.all(promises);
+		if (token.isCancellationRequested) {
+			return [];
+		}
+
+		const seen = new Set<string>();
+		const result: IResolvedAgentFile[] = [];
+		for (const file of resolvedAgentFiles.sort((a, b) => a.uri.toString().localeCompare(b.uri.toString()))) {
+			const key = (file.realPath ?? file.uri).toString();
+			if (seen.has(key)) {
+				continue;
+			}
+			seen.add(key);
+			result.push(file);
+		}
+
+		return result;
 	}
 }
 
@@ -295,7 +380,32 @@ class AgenticPromptFilesLocator extends PromptFilesLocator {
 		return Event.fromObservableLight(this.customizationWorkspaceService.activeProjectRoot);
 	}
 
+	public override async listFiles(type: PromptsType, storage: PromptsStorage, token: CancellationToken): Promise<readonly URI[]> {
+		if (isWeb && storage === PromptsStorage.user) {
+			return [];
+		}
+		return super.listFiles(type, storage, token);
+	}
+
+	public override createFilesUpdatedEvent(type: PromptsType): { readonly event: Event<void>; dispose: () => void } {
+		if (isWeb) {
+			return { event: Event.None, dispose: () => { } };
+		}
+		return super.createFilesUpdatedEvent(type);
+	}
+
+	public override async findAgentSkills(token: CancellationToken) {
+		if (isWeb) {
+			return [];
+		}
+		return super.findAgentSkills(token);
+	}
+
 	public override async getHookSourceFolders(): Promise<readonly URI[]> {
+		if (isWeb) {
+			const folder = this.getActiveWorkspaceFolder();
+			return folder ? [joinPath(folder.uri, HOOKS_SOURCE_FOLDER)] : [];
+		}
 		const configured = await super.getHookSourceFolders();
 		if (configured.length > 0) {
 			return configured;

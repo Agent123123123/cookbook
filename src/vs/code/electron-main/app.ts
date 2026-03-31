@@ -17,7 +17,7 @@ import { Disposable, DisposableStore, MutableDisposable } from '../../base/commo
 import { Schemas, VSCODE_AUTHORITY } from '../../base/common/network.js';
 import { join, posix } from '../../base/common/path.js';
 import { INodeProcess, IProcessEnvironment, isLinux, isLinuxSnap, isMacintosh, isWindows, OS } from '../../base/common/platform.js';
-import { assertType } from '../../base/common/types.js';
+import { assertType, hasKey } from '../../base/common/types.js';
 import { URI } from '../../base/common/uri.js';
 import { generateUuid } from '../../base/common/uuid.js';
 import { registerContextMenuListener } from '../../base/parts/contextmenu/electron-main/contextmenu.js';
@@ -37,11 +37,14 @@ import { DialogMainService, IDialogMainService } from '../../platform/dialogs/el
 import { IEncryptionMainService } from '../../platform/encryption/common/encryptionService.js';
 import { EncryptionMainService } from '../../platform/encryption/electron-main/encryptionMainService.js';
 import { NativeBrowserElementsMainService, INativeBrowserElementsMainService } from '../../platform/browserElements/electron-main/nativeBrowserElementsMainService.js';
+import { AgentBackendChannel, AgentBackendChannelName } from '../../platform/agentMode/common/agentBackendIpc.js';
+import { AgentBackendLocation } from '../../platform/agentMode/common/agentBackendService.js';
+import { AgentBackendMainService } from '../../platform/agentMode/electron-main/agentBackendMainService.js';
 import { ipcBrowserViewChannelName } from '../../platform/browserView/common/browserView.js';
 import { ipcBrowserViewGroupChannelName } from '../../platform/browserView/common/browserViewGroup.js';
 import { BrowserViewMainService, IBrowserViewMainService } from '../../platform/browserView/electron-main/browserViewMainService.js';
 import { BrowserViewGroupMainService, IBrowserViewGroupMainService } from '../../platform/browserView/electron-main/browserViewGroupMainService.js';
-import { NativeParsedArgs } from '../../platform/environment/common/argv.js';
+import { NativeParsedArgs, shouldStartInAgentMode, toAgentModeWindowArgs } from '../../platform/environment/common/argv.js';
 import { IEnvironmentMainService } from '../../platform/environment/electron-main/environmentMainService.js';
 import { isLaunchedFromCli } from '../../platform/environment/node/argvHelper.js';
 import { getResolvedShellEnv } from '../../platform/shell/node/shellEnv.js';
@@ -410,8 +413,13 @@ export class CodeApplication extends Disposable {
 
 			// Mac only event: open new window when we get activated
 			if (!hasVisibleWindows) {
-				if ((process as INodeProcess).isEmbeddedApp || (this.environmentMainService.args['sessions'] && this.productService.quality !== 'stable')) {
-					await this.windowsMainService?.openSessionsWindow({ context: OpenContext.DOCK });
+				if ((process as INodeProcess).isEmbeddedApp || shouldStartInAgentMode(this.environmentMainService.args, this.productService.quality !== 'stable')) {
+					await this.windowsMainService?.open({
+						context: OpenContext.DOCK,
+						contextWindowId: undefined,
+						cli: toAgentModeWindowArgs(this.environmentMainService.args),
+						forceNewWindow: true,
+					});
 				} else {
 					await this.windowsMainService?.openEmptyWindow({ context: OpenContext.DOCK });
 				}
@@ -751,12 +759,6 @@ export class CodeApplication extends Disposable {
 
 			const windowOpenable = this.getWindowOpenableFromProtocolUrl(protocolUrl.uri);
 			if (windowOpenable) {
-				// Sessions app: skip all window openables (file/folder/workspace)
-				if ((process as INodeProcess).isEmbeddedApp) {
-					this.logService.trace('app#resolveInitialProtocolUrls() sessions app skipping window openable:', protocolUrl.uri.toString(true));
-					continue;
-				}
-
 				if (await this.shouldBlockOpenable(windowOpenable, windowsMainService, dialogMainService)) {
 					this.logService.trace('app#resolveInitialProtocolUrls() protocol url was blocked:', protocolUrl.uri.toString(true));
 
@@ -901,26 +903,6 @@ export class CodeApplication extends Disposable {
 
 	private async handleProtocolUrl(windowsMainService: IWindowsMainService, dialogMainService: IDialogMainService, urlService: IURLService, uri: URI, options?: IOpenURLOptions): Promise<boolean> {
 		this.logService.trace('app#handleProtocolUrl():', uri.toString(true), options);
-
-		// Sessions app: ensure the sessions window is open, then let other handlers process the URL.
-		if ((process as INodeProcess).isEmbeddedApp) {
-			this.logService.trace('app#handleProtocolUrl() sessions app handling protocol URL:', uri.toString(true));
-
-			// Skip window openables (file/folder/workspace) for security
-			const windowOpenable = this.getWindowOpenableFromProtocolUrl(uri);
-			if (windowOpenable) {
-				this.logService.trace('app#handleProtocolUrl() sessions app skipping window openable:', uri.toString(true));
-				return true;
-			}
-
-			// Ensure sessions window is open to receive the URL
-			const windows = await windowsMainService.openSessionsWindow({ context: OpenContext.LINK, contextWindowId: undefined });
-			const window = windows.at(0);
-			await window?.ready();
-
-			// Return false to let subsequent handlers (e.g., URLHandlerChannelClient) forward the URL
-			return false;
-		}
 
 		// Support 'workspace' URLs (https://github.com/microsoft/vscode/issues/124263)
 		if (uri.scheme === this.productService.urlProtocol && uri.path === 'workspace') {
@@ -1258,6 +1240,16 @@ export class CodeApplication extends Disposable {
 		mainProcessElectronServer.registerChannel('browserElements', browserElementsChannel);
 		sharedProcessClient.then(client => client.registerChannel('browserElements', browserElementsChannel));
 
+		// Agent Mode backend
+		const logService = accessor.get(ILogService);
+		const windowsMainService = accessor.get(IWindowsMainService);
+		const workspacesManagementMainService = accessor.get(IWorkspacesManagementMainService);
+		const agentBackendChannel = this._register(new AgentBackendChannel(mainProcessElectronServer, ctx => new AgentBackendMainService(
+			logService,
+			() => this.resolveAgentBackendLaunchContext(ctx, windowsMainService, workspacesManagementMainService),
+		)));
+		mainProcessElectronServer.registerChannel(AgentBackendChannelName, agentBackendChannel);
+
 		// Browser View
 		const browserViewChannel = ProxyChannel.fromService(accessor.get(IBrowserViewMainService), disposables);
 		mainProcessElectronServer.registerChannel(ipcBrowserViewChannelName, browserViewChannel);
@@ -1278,7 +1270,7 @@ export class CodeApplication extends Disposable {
 
 		// Native host (main & shared process)
 		this.nativeHostMainService = accessor.get(INativeHostMainService);
-		const nativeHostChannel = ProxyChannel.fromService(this.nativeHostMainService, disposables);
+		const nativeHostChannel = ProxyChannel.fromService(this.nativeHostMainService, disposables, { preBufferEvents: false });
 		mainProcessElectronServer.registerChannel('nativeHost', nativeHostChannel);
 		sharedProcessClient.then(client => client.registerChannel('nativeHost', nativeHostChannel));
 
@@ -1343,6 +1335,45 @@ export class CodeApplication extends Disposable {
 		mainProcessElectronServer.registerChannel(ipcUtilityProcessWorkerChannelName, utilityProcessWorkerChannel);
 	}
 
+	private async resolveAgentBackendLaunchContext(ctx: string, windowsMainService: IWindowsMainService, workspacesManagementMainService: IWorkspacesManagementMainService): Promise<{ cwd?: string; requestedLocation: AgentBackendLocation; remoteAuthority?: string }> {
+		const windowId = CodeApplication.parseWindowContext(ctx);
+		const fallback = {
+			cwd: process.cwd(),
+			requestedLocation: AgentBackendLocation.Local,
+			remoteAuthority: undefined,
+		};
+		if (typeof windowId !== 'number') {
+			return fallback;
+		}
+
+		const window = windowsMainService.getWindowById(windowId);
+		const requestedLocation = window?.remoteAuthority ? AgentBackendLocation.Remote : AgentBackendLocation.Local;
+		const remoteAuthority = window?.remoteAuthority;
+		const workspace = window?.openedWorkspace;
+		if (!workspace) {
+			return { ...fallback, requestedLocation, remoteAuthority };
+		}
+
+		if (hasKey(workspace, { uri: true }) && workspace.uri.scheme === Schemas.file) {
+			return { cwd: workspace.uri.fsPath, requestedLocation, remoteAuthority };
+		}
+
+		if (hasKey(workspace, { configPath: true }) && workspace.configPath.scheme === Schemas.file) {
+			const resolvedWorkspace = await workspacesManagementMainService.resolveLocalWorkspace(workspace.configPath);
+			const firstFolder = resolvedWorkspace?.folders[0]?.uri;
+			if (firstFolder?.scheme === Schemas.file) {
+				return { cwd: firstFolder.fsPath, requestedLocation, remoteAuthority };
+			}
+		}
+
+		return { ...fallback, requestedLocation, remoteAuthority };
+	}
+
+	private static parseWindowContext(ctx: string): number | undefined {
+		const match = /^window:(\d+)$/.exec(ctx);
+		return match ? Number(match[1]) : undefined;
+	}
+
 	private async openFirstWindow(accessor: ServicesAccessor, initialProtocolUrls: IInitialProtocolUrls | undefined): Promise<ICodeWindow[]> {
 		const windowsMainService = this.windowsMainService = accessor.get(IWindowsMainService);
 		this.auxiliaryWindowsMainService = accessor.get(IAuxiliaryWindowsMainService);
@@ -1350,9 +1381,14 @@ export class CodeApplication extends Disposable {
 		const context = isLaunchedFromCli(process.env) ? OpenContext.CLI : OpenContext.DESKTOP;
 		const args = this.environmentMainService.args;
 
-		// Handle sessions window first based on context
-		if ((process as INodeProcess).isEmbeddedApp || (args['sessions'] && this.productService.quality !== 'stable')) {
-			return windowsMainService.openSessionsWindow({ context, contextWindowId: undefined });
+		// Handle Agent Mode startup first based on context
+		if ((process as INodeProcess).isEmbeddedApp || shouldStartInAgentMode(args, this.productService.quality !== 'stable')) {
+			return windowsMainService.open({
+				context,
+				contextWindowId: undefined,
+				cli: toAgentModeWindowArgs(args),
+				forceNewWindow: true,
+			});
 		}
 
 		// Then check for windows from protocol links to open

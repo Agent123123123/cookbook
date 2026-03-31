@@ -1102,6 +1102,12 @@ export namespace ProxyChannel {
 		 * must be used instead.
 		 */
 		disableMarshalling?: boolean;
+
+		/**
+		 * Disables eagerly buffering all event properties when creating a channel.
+		 * Events continue to be buffered lazily when they are first listened to.
+		 */
+		preBufferEvents?: boolean;
 	}
 
 	export interface ICreateServiceChannelOptions extends IProxyOptions { }
@@ -1109,6 +1115,7 @@ export namespace ProxyChannel {
 	export function fromService<TContext>(service: unknown, disposables: DisposableStore, options?: ICreateServiceChannelOptions): IServerChannel<TContext> {
 		const handler = service as { [key: string]: unknown };
 		const disableMarshalling = options?.disableMarshalling;
+		const preBufferEvents = options?.preBufferEvents ?? true;
 
 		// Buffer any event that should be supported by
 		// iterating over all property keys and finding them
@@ -1116,9 +1123,11 @@ export namespace ProxyChannel {
 		// are lazy and use a Proxy within. For that we
 		// still need to check later (see below).
 		const mapEventNameToEvent = new Map<string, Event<unknown>>();
-		for (const key in handler) {
-			if (propertyIsEvent(key)) {
-				mapEventNameToEvent.set(key, Event.buffer(handler[key] as Event<unknown>, key, true, undefined, disposables));
+		if (preBufferEvents) {
+			for (const key in handler) {
+				if (propertyIsEvent(key)) {
+					mapEventNameToEvent.set(key, Event.buffer(handler[key] as Event<unknown>, key, true, undefined, disposables));
+				}
 			}
 		}
 

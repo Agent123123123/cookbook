@@ -99,6 +99,8 @@ import { McpManagementChannel } from '../../platform/mcp/common/mcpManagementIpc
 import { AllowedMcpServersService } from '../../platform/mcp/common/allowedMcpServersService.js';
 import { IMcpGalleryManifestService } from '../../platform/mcp/common/mcpGalleryManifest.js';
 import { McpGalleryManifestIPCService } from '../../platform/mcp/common/mcpGalleryManifestServiceIpc.js';
+import { AgentBackendChannel, AgentBackendChannelName } from '../../platform/agentMode/common/agentBackendIpc.js';
+import { AgentBackendRemoteService } from './agentBackendRemoteService.js';
 
 const eventPrefix = 'monacoworkbench';
 
@@ -282,6 +284,10 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 		socketServer.registerChannel('extensions', channel);
 
 		socketServer.registerChannel('mcpManagement', new McpManagementChannel(mcpManagementService, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority)));
+
+		// Agent backend channel — spawns opencode on the remote host
+		const agentBackendChannel = new AgentBackendChannel<RemoteAgentConnectionContext>(socketServer, () => instantiationService.createInstance(AgentBackendRemoteService));
+		socketServer.registerChannel(AgentBackendChannelName, agentBackendChannel);
 
 		// clean up extensions folder
 		remoteExtensionsScanner.whenExtensionsReady().then(() => extensionManagementService.cleanUp());

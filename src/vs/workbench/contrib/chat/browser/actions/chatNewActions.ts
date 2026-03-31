@@ -24,6 +24,9 @@ import { ACTION_ID_NEW_CHAT, ACTION_ID_NEW_EDIT_SESSION, CHAT_CATEGORY, clearCha
 import { clearChatEditor } from './chatClear.js';
 import { AgentSessionProviders, AgentSessionsViewerOrientation } from '../agentSessions/agentSessions.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
+import { IAgentModeChatService } from '../../../agentMode/browser/agentModeChatService.js';
+import { IAgentSessionService } from '../../../agentMode/browser/agentSessionService.js';
+import { IWorkbenchModeService } from '../../../agentMode/browser/agentMode.contribution.js';
 
 export interface INewEditSessionActionContext {
 
@@ -130,6 +133,28 @@ export function registerNewChatActions() {
 
 		async run(accessor: ServicesAccessor, ...args: unknown[]) {
 			const executeCommandContext = isNewEditSessionActionContext(args[0]) ? args[0] : undefined;
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (executeCommandContext?.agentMode === true || (executeCommandContext?.agentMode !== false && workbenchModeService.mode === 'agent')) {
+				await accessor.get(IAgentModeChatService).openChat({
+					newSession: true,
+					query: executeCommandContext?.inputValue,
+					isPartialQuery: executeCommandContext?.isPartialQuery,
+				});
+				return;
+			}
+
+			if (workbenchModeService.mode !== 'agent') {
+				const agentSessionService = accessor.get(IAgentSessionService);
+				agentSessionService.createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				if (executeCommandContext?.inputValue) {
+					agentSessionService.updateComposerDraft(executeCommandContext.inputValue);
+					if (!executeCommandContext.isPartialQuery && executeCommandContext.inputValue.trim()) {
+						await agentSessionService.sendComposerPrompt();
+					}
+				}
+				return;
+			}
 
 			// Context from toolbar or lastFocusedWidget
 			const context = getEditingSessionContext(accessor, args);
@@ -165,6 +190,28 @@ export function registerNewChatActions() {
 
 			async run(accessor: ServicesAccessor, ...args: unknown[]) {
 				const executeCommandContext = isNewEditSessionActionContext(args[0]) ? args[0] : undefined;
+				const workbenchModeService = accessor.get(IWorkbenchModeService);
+				if (executeCommandContext?.agentMode === true || (executeCommandContext?.agentMode !== false && workbenchModeService.mode === 'agent')) {
+					await accessor.get(IAgentModeChatService).openChat({
+						newSession: true,
+						query: executeCommandContext?.inputValue,
+						isPartialQuery: executeCommandContext?.isPartialQuery,
+					});
+					return;
+				}
+
+				if (workbenchModeService.mode !== 'agent') {
+					const agentSessionService = accessor.get(IAgentSessionService);
+					agentSessionService.createNewSession();
+					await accessor.get(IViewsService).openView(ChatViewId, true);
+					if (executeCommandContext?.inputValue) {
+						agentSessionService.updateComposerDraft(executeCommandContext.inputValue);
+						if (!executeCommandContext.isPartialQuery && executeCommandContext.inputValue.trim()) {
+							await agentSessionService.sendComposerPrompt();
+						}
+					}
+					return;
+				}
 				const context = getEditingSessionContext(accessor, args);
 				await runNewChatAction(accessor, context, executeCommandContext);
 			}

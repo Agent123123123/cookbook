@@ -159,6 +159,21 @@ class TestService implements ITestService {
 	}
 }
 
+class ListenerTrackingService {
+
+	private readonly _onPong = new Emitter<string>({
+		onDidAddFirstListener: () => this.listenerCount++,
+		onDidRemoveLastListener: () => this.listenerCount--
+	});
+
+	readonly onPong = this._onPong.event;
+	listenerCount = 0;
+
+	dispose(): void {
+		this._onPong.dispose();
+	}
+}
+
 class TestChannel implements IServerChannel {
 
 	constructor(private service: ITestService) { }
@@ -406,6 +421,28 @@ suite('Base IPC', function () {
 		test('buffers in arrays', async function () {
 			const r = await ipcService.buffersLength([VSBuffer.alloc(2), VSBuffer.alloc(3)]);
 			return assert.strictEqual(r, 5);
+		});
+
+		test('can disable eager event prebuffering', async function () {
+			const service = store.add(new ListenerTrackingService());
+			const localDisposables = store.add(new DisposableStore());
+			const testServer = localDisposables.add(new TestIPCServer());
+			testServer.registerChannel(TestChannelId, ProxyChannel.fromService(service, localDisposables, { preBufferEvents: false }));
+
+			const testClient = localDisposables.add(testServer.createConnection('client2'));
+			const testIpcService = ProxyChannel.toService<Pick<ITestService, 'onPong'>>(testClient.getChannel(TestChannelId));
+
+			assert.strictEqual(service.listenerCount, 0);
+
+			const listener = testIpcService.onPong(() => { });
+			await timeout(0);
+
+			assert.strictEqual(service.listenerCount, 1);
+
+			listener.dispose();
+			await timeout(0);
+
+			assert.strictEqual(service.listenerCount, 0);
 		});
 	});
 

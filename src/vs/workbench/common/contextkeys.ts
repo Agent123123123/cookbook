@@ -34,6 +34,8 @@ export const VirtualWorkspaceContext = new RawContextKey<string>('virtualWorkspa
 export const TemporaryWorkspaceContext = new RawContextKey<boolean>('temporaryWorkspace', false, localize('temporaryWorkspace', "The scheme of the current workspace is from a temporary file system."));
 
 export const IsSessionsWindowContext = new RawContextKey<boolean>('isSessionsWindow', false, localize('isSessionsWindow', "Whether the current window is a sessions window."));
+export const WorkbenchModeContext = new RawContextKey<string>('workbenchMode', 'editor', localize('workbenchMode', "The current workbench mode, either 'editor' or 'agent'."));
+export const WorkbenchAgentModeContext = new RawContextKey<boolean>('workbenchAgentMode', false, localize('workbenchAgentMode', "Whether the workbench is in agent mode."));
 
 export const HasWebFileSystemAccess = new RawContextKey<boolean>('hasWebFileSystemAccess', false, true); // Support for FileSystemAccess web APIs (https://wicg.github.io/file-system-access)
 

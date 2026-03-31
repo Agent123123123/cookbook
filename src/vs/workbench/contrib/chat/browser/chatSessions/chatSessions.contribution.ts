@@ -374,6 +374,12 @@ export class ChatSessionsService extends Disposable implements IChatSessionsServ
 		return Array.from(this.inProgressMap.entries()).map(([chatSessionType, count]) => ({ chatSessionType, count }));
 	}
 
+	private clearInProgress(chatSessionType: string): void {
+		if (this.inProgressMap.delete(chatSessionType)) {
+			this._onDidChangeInProgress.fire();
+		}
+	}
+
 	private async updateInProgressStatus(chatSessionType: string): Promise<void> {
 		try {
 			const items: IChatSessionItem[] = [];
@@ -907,7 +913,7 @@ export class ChatSessionsService extends Disposable implements IChatSessionsServ
 				}
 
 				// Remove any in-progress tracking for this provider since it's no longer available
-				this.updateInProgressStatus(chatSessionType);
+				this.clearInProgress(chatSessionType);
 			}
 		};
 	}

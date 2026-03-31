@@ -1,0 +1,2007 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.agent-mode-editor-surface-parent {
+	position: relative;
+}
+
+.agent-mode-editor-surface {
+	position: absolute;
+	inset: 0;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	background: linear-gradient(180deg, var(--vscode-editor-background) 0%, color-mix(in srgb, var(--vscode-editor-background) 94%, var(--vscode-sideBar-background)) 72%, color-mix(in srgb, var(--vscode-sideBar-background) 97%, var(--vscode-editor-background)) 100%);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--vscode-panel-border) 84%, transparent);
+	color: var(--vscode-foreground);
+}
+
+.agent-mode-editor-surface__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 16px 28px 12px;
+	border-bottom: 1px solid color-mix(in srgb, var(--vscode-panel-border) 82%, transparent);
+	background: color-mix(in srgb, var(--vscode-editor-background) 98%, transparent);
+}
+
+.agent-mode-editor-surface__headline {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	min-width: 0;
+}
+
+.agent-mode-editor-surface__header-meta {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	align-items: flex-start;
+	gap: 6px;
+	max-width: min(46%, 520px);
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--vscode-descriptionForeground);
+	overflow: hidden;
+}
+
+.agent-mode-editor-surface__header-meta > * {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.agent-mode-editor-surface__header-meta > * + *::before {
+	content: none;
+}
+
+.agent-mode-editor-surface__meta {
+	display: inline-flex;
+	align-items: center;
+	max-width: min(100%, 420px);
+	font-size: 11px;
+	line-height: 1.4;
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	padding: 3px 8px;
+	border: 0;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--vscode-list-hoverBackground) 62%, transparent);
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__meta--connected {
+	color: color-mix(in srgb, var(--vscode-testing-iconPassed) 82%, var(--vscode-descriptionForeground));
+}
+
+.agent-mode-editor-surface__meta--offline,
+.agent-mode-editor-surface__meta--error {
+	color: var(--vscode-errorForeground);
+}
+
+.agent-mode-editor-surface__meta--directory {
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 88%, transparent);
+}
+
+.agent-mode-editor-surface__eyebrow,
+.agent-mode-editor-surface__section-label,
+.agent-mode-editor-surface__message-meta {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__title {
+	font-size: 22px;
+	line-height: 1.15;
+	font-weight: 650;
+	letter-spacing: -0.02em;
+}
+
+.agent-mode-editor-surface__subtitle {
+	font-size: 12px;
+	line-height: 1.55;
+	color: var(--vscode-descriptionForeground);
+	max-width: 860px;
+}
+
+.agent-mode-editor-surface__session-meta {
+	font-size: 12px;
+	line-height: 1.5;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 88%, transparent);
+}
+
+.agent-mode-editor-surface__chips,
+.agent-mode-editor-surface__composer-hints {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.agent-mode-editor-surface__chip {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	font-weight: 500;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	border: 0;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__chip--muted {
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 82%, transparent);
+}
+
+.agent-mode-editor-surface__body {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	background: linear-gradient(180deg, color-mix(in srgb, var(--vscode-editor-background) 96%, transparent) 0%, color-mix(in srgb, var(--vscode-editor-background) 100%, transparent) 100%);
+}
+
+.agent-mode-editor-surface__main {
+	width: min(100% - 32px, 1480px);
+	margin: 0 auto;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 18px 0 14px;
+}
+
+.agent-mode-editor-surface__timeline {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	scroll-behavior: auto;
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 6px 8px 10px;
+}
+
+.agent-mode-editor-surface__timeline:hover {
+	scrollbar-color: color-mix(in srgb, var(--vscode-descriptionForeground) 28%, transparent) transparent;
+}
+
+.agent-mode-editor-surface__timeline::-webkit-scrollbar {
+	width: 8px;
+}
+
+.agent-mode-editor-surface__timeline::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.agent-mode-editor-surface__timeline::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: transparent;
+}
+
+.agent-mode-editor-surface__timeline:hover::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--vscode-descriptionForeground) 28%, transparent);
+}
+
+.agent-mode-editor-surface__timeline::-webkit-scrollbar-thumb:active {
+	background: color-mix(in srgb, var(--vscode-descriptionForeground) 42%, transparent);
+}
+
+.agent-mode-editor-surface__turn {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	animation: agent-mode-editor-surface-turn-enter 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.agent-mode-editor-surface__turn-attachments {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding-left: 4px;
+	margin-top: 2px;
+}
+
+.agent-mode-editor-surface__turn-attachments--standalone {
+	padding-left: 0;
+	margin-top: 0;
+}
+
+.agent-mode-editor-surface__turn-footer {
+	padding-left: 4px;
+	font-size: 11px;
+	line-height: 1.45;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 80%, transparent);
+}
+
+.agent-mode-editor-surface__turn-attachment--secondary {
+	opacity: 0.72;
+}
+
+.agent-mode-editor-surface__turn-attachment--settled {
+	opacity: 0.68;
+}
+
+.agent-mode-editor-surface__turn-attachment--blocking {
+	opacity: 1;
+}
+
+.agent-mode-editor-surface__message-row {
+	display: flex;
+	width: 100%;
+	gap: 10px;
+}
+
+.agent-mode-editor-surface__message-row--user {
+	justify-content: flex-end;
+}
+
+.agent-mode-editor-surface__message-row--agent {
+	justify-content: flex-start;
+}
+
+.agent-mode-editor-surface__message-row--process {
+	justify-content: stretch;
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__message-row--substep {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__turn-attachment--secondary.agent-mode-editor-surface__message-row--process {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__turn-attachment--secondary.agent-mode-editor-surface__message-row--substep,
+.agent-mode-editor-surface__turn-attachment--blocking.agent-mode-editor-surface__message-row--substep {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__turn-attachment--blocking.agent-mode-editor-surface__message-row--process {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__message-row--targeted {
+	border-left-color: color-mix(in srgb, var(--vscode-focusBorder) 82%, var(--vscode-panel-border));
+}
+
+.agent-mode-editor-surface__message-row--working {
+	justify-content: flex-start;
+	padding-left: 8px;
+}
+
+.agent-mode-editor-surface__message {
+	width: fit-content;
+	max-width: min(76%, 920px);
+	padding: 9px 12px;
+	border-radius: 8px;
+	border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 46%, transparent);
+	background: color-mix(in srgb, var(--vscode-editorHoverWidget-background) 10%, transparent);
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.agent-mode-editor-surface__message--user {
+	background: transparent;
+	border: 0;
+	padding: 0;
+	max-width: min(76%, 720px);
+	width: fit-content;
+	color: var(--vscode-foreground);
+	text-align: right;
+}
+
+.agent-mode-editor-surface__message--agent {
+	width: min(100%, 980px);
+	max-width: min(100%, 980px);
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.agent-mode-editor-surface__message-sender {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--vscode-descriptionForeground);
+	margin-bottom: 2px;
+}
+
+.agent-mode-editor-surface__message-title {
+	margin-top: 2px;
+	font-size: 15px;
+	line-height: 1.45;
+	font-weight: 650;
+}
+
+.agent-mode-editor-surface__message-copy {
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown,
+.agent-mode-editor-surface__process-copy > .rendered-markdown,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown {
+	font-size: inherit;
+	line-height: inherit;
+	color: inherit;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown > :first-child,
+.agent-mode-editor-surface__process-copy > .rendered-markdown > :first-child,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown > :first-child {
+	margin-top: 0;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown > :last-child,
+.agent-mode-editor-surface__process-copy > .rendered-markdown > :last-child,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown > :last-child {
+	margin-bottom: 0;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown p,
+.agent-mode-editor-surface__process-copy > .rendered-markdown p,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown p {
+	margin: 0;
+	line-height: inherit;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown p + p,
+.agent-mode-editor-surface__process-copy > .rendered-markdown p + p,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown p + p {
+	margin-top: 4px;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown ul,
+.agent-mode-editor-surface__message-copy > .rendered-markdown ol,
+.agent-mode-editor-surface__process-copy > .rendered-markdown ul,
+.agent-mode-editor-surface__process-copy > .rendered-markdown ol,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown ul,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown ol {
+	margin: 4px 0 0;
+	padding-left: 18px;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown li,
+.agent-mode-editor-surface__process-copy > .rendered-markdown li,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown li {
+	margin: 0;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown h1,
+.agent-mode-editor-surface__message-copy > .rendered-markdown h2,
+.agent-mode-editor-surface__message-copy > .rendered-markdown h3,
+.agent-mode-editor-surface__message-copy > .rendered-markdown h4,
+.agent-mode-editor-surface__process-copy > .rendered-markdown h1,
+.agent-mode-editor-surface__process-copy > .rendered-markdown h2,
+.agent-mode-editor-surface__process-copy > .rendered-markdown h3,
+.agent-mode-editor-surface__process-copy > .rendered-markdown h4,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown h1,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown h2,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown h3,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown h4 {
+	margin: 0 0 4px;
+	line-height: 1.3;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown code,
+.agent-mode-editor-surface__process-copy > .rendered-markdown code,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown code {
+	font-family: var(--monaco-monospace-font);
+	font-size: 0.95em;
+}
+
+.agent-mode-editor-surface__message-copy > .rendered-markdown pre,
+.agent-mode-editor-surface__process-copy > .rendered-markdown pre,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown pre,
+.agent-mode-editor-surface__message-copy > .rendered-markdown .code,
+.agent-mode-editor-surface__process-copy > .rendered-markdown .code,
+.agent-mode-editor-surface__reasoning-body > .rendered-markdown .code {
+	margin: 6px 0 0;
+	padding: 7px 10px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--vscode-textCodeBlock-background) 88%, var(--vscode-editor-background));
+	border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 80%, transparent);
+	overflow-x: auto;
+}
+
+.agent-mode-editor-surface__message-meta {
+	margin-bottom: 4px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--vscode-descriptionForeground);
+	font-size: 10px;
+	letter-spacing: 0.06em;
+}
+
+.agent-mode-editor-surface__message-list {
+	margin: 7px 0 0;
+	padding-left: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__substep {
+	position: relative;
+	width: min(100%, 980px);
+	border: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.agent-mode-editor-surface__substep-summary {
+	position: relative;
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	min-width: 0;
+	padding: 4px 0;
+	cursor: pointer;
+	list-style: none;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__substep-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__substep-summary-copy {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	padding-top: 1px;
+	padding-left: 2px;
+}
+
+.agent-mode-editor-surface__substep-label {
+	font-size: 10px;
+	line-height: 1.4;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__substep-primary {
+	font-size: 12px;
+	line-height: 1.45;
+	font-weight: 500;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.agent-mode-editor-surface__substep-primary--code {
+	font-family: var(--monaco-monospace-font);
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.agent-mode-editor-surface__substep-secondary {
+	font-size: 11px;
+	line-height: 1.45;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 94%, transparent);
+}
+
+.agent-mode-editor-surface__substep-meta {
+	font-size: 11px;
+	line-height: 1.4;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 88%, transparent);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.agent-mode-editor-surface__substep-icon {
+	position: relative;
+	flex: none;
+	width: 12px;
+	height: 12px;
+	margin-top: 6px;
+	border-radius: 50%;
+	background: var(--vscode-editor-background);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-panel-border) 76%, transparent);
+	color: var(--vscode-descriptionForeground);
+	z-index: 1;
+}
+
+.agent-mode-editor-surface__substep-icon::after {
+	content: '';
+	position: absolute;
+	inset: 3px;
+	border-radius: 50%;
+	background: currentColor;
+	opacity: 0.9;
+}
+
+.agent-mode-editor-surface__substep--reasoning .agent-mode-editor-surface__substep-icon,
+.agent-mode-editor-surface__substep-icon--reasoning {
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 88%, transparent);
+}
+
+.agent-mode-editor-surface__substep--running .agent-mode-editor-surface__substep-icon,
+.agent-mode-editor-surface__substep-icon--running {
+	color: var(--vscode-textLink-foreground);
+}
+
+.agent-mode-editor-surface__substep--success .agent-mode-editor-surface__substep-icon,
+.agent-mode-editor-surface__substep-icon--success {
+	color: var(--vscode-testing-iconPassed);
+}
+
+.agent-mode-editor-surface__substep--warning .agent-mode-editor-surface__substep-icon,
+.agent-mode-editor-surface__substep-icon--warning {
+	color: var(--vscode-editorWarning-foreground);
+}
+
+.agent-mode-editor-surface__substep--error .agent-mode-editor-surface__substep-icon,
+.agent-mode-editor-surface__substep-icon--error {
+	color: var(--vscode-errorForeground);
+}
+
+.agent-mode-editor-surface__substep-chevron {
+	flex: none;
+	margin-top: 8px;
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__substep[open] .agent-mode-editor-surface__substep-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__substep-content {
+	position: relative;
+	margin-left: 10px;
+	padding: 0 0 0 12px;
+	min-height: 0;
+}
+
+.agent-mode-editor-surface__substep-content::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: color-mix(in srgb, var(--vscode-panel-border) 38%, transparent);
+}
+
+.agent-mode-editor-surface__substep-body {
+	padding: 2px 0 2px 6px;
+	min-width: 0;
+}
+
+.agent-mode-editor-surface__substep-body--reasoning {
+	padding-top: 4px;
+	padding-bottom: 0;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-copy,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__reasoning-body {
+	margin-top: 0;
+	font-size: 11px;
+	line-height: 1.6;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 96%, var(--vscode-foreground));
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-copy--substep {
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 88%, var(--vscode-foreground));
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-details,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-sections,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-actions,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-inspector,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-list,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-code,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-stream,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-meta-row {
+	margin-top: 6px;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-code,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-stream-summary,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section--scope {
+	background: transparent;
+	border-color: color-mix(in srgb, var(--vscode-panel-border) 56%, transparent);
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-action {
+	padding: 2px 7px;
+	font-size: 11px;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-detail-label,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section-label,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-inspector-label,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-stream-label {
+	font-size: 10px;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-sections {
+	gap: 6px;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section {
+	gap: 3px;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section--scope,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-stream-summary {
+	padding: 4px 0;
+	border-radius: 0;
+	border-width: 0;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-stream--stderr .agent-mode-editor-surface__process-stream-summary {
+	color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 84%, var(--vscode-descriptionForeground));
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-stream-content,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-inspector-content {
+	margin-top: 4px;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-inspector-summary {
+	opacity: 0.86;
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-detail-value,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section-list,
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section-copy {
+	font-size: 11px;
+	line-height: 1.55;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 88%, var(--vscode-foreground));
+}
+
+.agent-mode-editor-surface__substep-body .agent-mode-editor-surface__process-section-copy {
+	margin-top: 1px;
+	word-break: break-word;
+}
+
+.agent-mode-editor-surface__process-card {
+	width: min(100%, 980px);
+	padding: 1px 0 0;
+	border-radius: 0;
+	border: 0;
+	background: transparent;
+	border-left-width: 0;
+}
+
+.agent-mode-editor-surface__process-disclosure {
+	width: min(100%, 980px);
+	border: 0;
+	padding: 0;
+}
+
+.agent-mode-editor-surface__process-disclosure-summary {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	cursor: pointer;
+	list-style: none;
+	padding: 1px 0;
+}
+
+.agent-mode-editor-surface__process-disclosure-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__process-disclosure-summary-copy {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.agent-mode-editor-surface__process-disclosure-primary {
+	font-size: 12px;
+	line-height: 1.45;
+	font-weight: 500;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.agent-mode-editor-surface__process-disclosure-primary--code {
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.agent-mode-editor-surface__process-disclosure-secondary {
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-disclosure-meta {
+	font-size: 11px;
+	line-height: 1.4;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 92%, transparent);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.agent-mode-editor-surface__process-disclosure-chevron {
+	flex: none;
+	margin-top: 6px;
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-disclosure[open] .agent-mode-editor-surface__process-disclosure-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__process-disclosure-content {
+	margin-top: 4px;
+	padding-left: 8px;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__approval-card {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__approval-card--settled {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__process-card--running {
+	color: inherit;
+}
+
+.agent-mode-editor-surface__process-card--success {
+	color: inherit;
+}
+
+.agent-mode-editor-surface__process-card--warning {
+	color: inherit;
+}
+
+.agent-mode-editor-surface__process-card--error {
+	color: inherit;
+}
+
+.agent-mode-editor-surface__status-row {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 8px;
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--vscode-descriptionForeground);
+	padding: 1px 0;
+}
+
+.agent-mode-editor-surface__status-title {
+	font-weight: 600;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 94%, transparent);
+}
+
+.agent-mode-editor-surface__status-body,
+.agent-mode-editor-surface__status-meta {
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-title {
+	margin-top: 2px;
+	font-size: 14px;
+	line-height: 1.45;
+	font-weight: 600;
+}
+
+.agent-mode-editor-surface__process-copy {
+	margin-top: 4px;
+	font-size: 11px;
+	line-height: 1.55;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 94%, transparent);
+}
+
+.agent-mode-editor-surface__process-code {
+	margin: 6px 0 0;
+	padding: 8px 10px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--vscode-textCodeBlock-background) 88%, var(--vscode-editor-background));
+	border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 80%, transparent);
+	font-size: 12px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow-x: auto;
+}
+
+.agent-mode-editor-surface__process-code--section {
+	margin-top: 4px;
+}
+
+.agent-mode-editor-surface__process-details {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, max-content));
+	gap: 4px 14px;
+	margin-top: 6px;
+}
+
+.agent-mode-editor-surface__approval-summary {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.agent-mode-editor-surface__approval-summary .agent-mode-editor-surface__process-details {
+	margin-top: 0;
+}
+
+.agent-mode-editor-surface__approval-card--pending .agent-mode-editor-surface__message-meta {
+	color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 80%, var(--vscode-descriptionForeground));
+}
+
+.agent-mode-editor-surface__approval-card--pending .agent-mode-editor-surface__process-title {
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+.agent-mode-editor-surface__process-detail {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+
+.agent-mode-editor-surface__process-detail-label {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.agent-mode-editor-surface__process-detail-value {
+	font-size: 12px;
+	line-height: 1.45;
+	color: var(--vscode-foreground);
+	word-break: break-word;
+}
+
+.agent-mode-editor-surface__process-sections {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 6px;
+}
+
+.agent-mode-editor-surface__process-section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.agent-mode-editor-surface__process-section--scope {
+	padding: 8px 10px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--vscode-list-hoverBackground) 62%, transparent);
+	border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 74%, transparent);
+}
+
+.agent-mode-editor-surface__process-section-label {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.agent-mode-editor-surface__process-section-list {
+	margin: 0;
+	padding-left: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--vscode-foreground);
+}
+
+.agent-mode-editor-surface__process-section-copy {
+	font-size: 12px;
+	line-height: 1.55;
+	color: var(--vscode-foreground);
+	word-break: break-word;
+}
+
+.agent-mode-editor-surface__process-stream {
+	border: 0;
+	padding: 0;
+}
+
+.agent-mode-editor-surface__process-stream-summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	list-style: none;
+	padding: 6px 8px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--vscode-list-hoverBackground) 62%, transparent);
+}
+
+.agent-mode-editor-surface__process-stream-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__process-stream-label {
+	font-size: 11px;
+	line-height: 1.4;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-stream-meta {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-stream-chevron {
+	margin-left: auto;
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-stream[open] .agent-mode-editor-surface__process-stream-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__process-stream--stderr .agent-mode-editor-surface__process-stream-summary {
+	background: color-mix(in srgb, var(--vscode-editorWarning-foreground) 8%, var(--vscode-editor-background));
+}
+
+.agent-mode-editor-surface__process-stream-content {
+	margin-top: 6px;
+}
+
+.agent-mode-editor-surface__process-inspector {
+	margin-top: 8px;
+	border: 0;
+	padding: 0;
+}
+
+.agent-mode-editor-surface__process-inspector-summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	list-style: none;
+}
+
+.agent-mode-editor-surface__process-inspector-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__process-inspector-label {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.agent-mode-editor-surface__process-inspector-chevron {
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-inspector[open] .agent-mode-editor-surface__process-inspector-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__process-inspector-content {
+	margin-top: 8px;
+}
+
+.agent-mode-editor-surface__process-meta-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 8px;
+}
+
+.agent-mode-editor-surface__process-meta-pill {
+	display: inline-flex;
+	align-items: center;
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	border: 0;
+}
+
+.agent-mode-editor-surface__reasoning-card {
+	width: min(100%, 980px);
+	border-radius: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, padding 160ms ease, opacity 160ms ease;
+}
+
+.agent-mode-editor-surface__reasoning-card[open] {
+	padding: 6px 0 0 10px;
+	border: 0;
+	border-left: 1px solid color-mix(in srgb, var(--vscode-panel-border) 52%, transparent);
+	background: transparent;
+}
+
+.agent-mode-editor-surface__reasoning-summary {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+	cursor: pointer;
+	list-style: none;
+	min-width: 0;
+}
+
+.agent-mode-editor-surface__reasoning-card:not([open]) .agent-mode-editor-surface__reasoning-summary {
+	padding: 2px 4px;
+}
+
+.agent-mode-editor-surface__reasoning-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__reasoning-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.agent-mode-editor-surface__reasoning-preview {
+	min-width: 0;
+	flex: 1;
+	font-size: 11px;
+	line-height: 1.45;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 92%, transparent);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.agent-mode-editor-surface__reasoning-chevron {
+	margin-left: auto;
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__reasoning-card[open] .agent-mode-editor-surface__reasoning-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__reasoning-content {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	transition: grid-template-rows 180ms ease, opacity 180ms ease, margin-top 180ms ease;
+	margin-top: 0;
+}
+
+.agent-mode-editor-surface__reasoning-card[open] .agent-mode-editor-surface__reasoning-content {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	margin-top: 6px;
+}
+
+.agent-mode-editor-surface__reasoning-content-inner {
+	min-height: 0;
+	overflow: hidden;
+}
+
+/* --- Compact reasoning inline summary --- */
+
+.agent-mode-editor-surface__message-row--reasoning {
+	padding-left: 0;
+	border-left: 0;
+}
+
+.agent-mode-editor-surface__reasoning-inline-summary {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	padding: 1px 0;
+	cursor: pointer;
+	list-style: none;
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	line-height: 1.4;
+}
+
+.agent-mode-editor-surface__reasoning-inline-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__reasoning-inline-preview {
+	flex: 1;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-style: italic;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__reasoning-inline-chevron {
+	flex: none;
+	width: 7px;
+	height: 7px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 62%, transparent);
+}
+
+.agent-mode-editor-surface__substep--reasoning[open] .agent-mode-editor-surface__reasoning-inline-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__reasoning-inline-content {
+	padding: 4px 0 2px 16px;
+	border-left: 1px solid color-mix(in srgb, var(--vscode-panel-border) 36%, transparent);
+	margin-left: 0;
+}
+
+.agent-mode-editor-surface__reasoning-inline-content .agent-mode-editor-surface__reasoning-body {
+	font-size: 11px;
+	line-height: 1.6;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 92%, var(--vscode-foreground));
+}
+
+/* --- Compact process summary (settled successful commands/tools) --- */
+
+.agent-mode-editor-surface__substep--compact {
+	border: 0;
+	padding: 0;
+	background: transparent;
+}
+
+.agent-mode-editor-surface__compact-summary {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	padding: 1px 0;
+	cursor: pointer;
+	list-style: none;
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__compact-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__compact-summary-text {
+	flex: 1;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 500;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 94%, var(--vscode-foreground));
+}
+
+.agent-mode-editor-surface__compact-summary-text--code {
+	font-family: var(--monaco-monospace-font);
+	font-size: 11px;
+}
+
+.agent-mode-editor-surface__compact-summary-meta {
+	flex: none;
+	font-size: 10px;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 78%, transparent);
+	white-space: nowrap;
+}
+
+.agent-mode-editor-surface__compact-summary-chevron {
+	flex: none;
+	width: 7px;
+	height: 7px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: color-mix(in srgb, var(--vscode-descriptionForeground) 62%, transparent);
+}
+
+.agent-mode-editor-surface__substep--compact[open] .agent-mode-editor-surface__compact-summary-chevron {
+	transform: rotate(225deg);
+}
+
+/* --- Patch summary line --- */
+
+.agent-mode-editor-surface__patch-summary-line {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.agent-mode-editor-surface__patch-summary-text {
+	font-size: 12px;
+	line-height: 1.45;
+	font-weight: 500;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* --- Approval headline and inspection --- */
+
+.agent-mode-editor-surface__approval-headline {
+	font-size: 13px;
+	line-height: 1.45;
+	font-weight: 600;
+	margin-top: 2px;
+}
+
+.agent-mode-editor-surface__process-code--approval {
+	margin-top: 4px;
+	padding: 6px 8px;
+	font-size: 11px;
+}
+
+.agent-mode-editor-surface__approval-inspection {
+	margin-top: 6px;
+	border: 0;
+	padding: 0;
+}
+
+.agent-mode-editor-surface__approval-inspection-summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	cursor: pointer;
+	list-style: none;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__approval-inspection-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__approval-inspection-label {
+	font-size: 10px;
+	line-height: 1.4;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__approval-inspection-chevron {
+	width: 7px;
+	height: 7px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__approval-inspection[open] .agent-mode-editor-surface__approval-inspection-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__approval-inspection-content {
+	margin-top: 4px;
+	padding-left: 8px;
+}
+
+.agent-mode-editor-surface__reasoning-body {
+	font-size: 12px;
+	line-height: 1.65;
+	color: var(--vscode-foreground);
+}
+
+@keyframes agent-mode-editor-surface-turn-enter {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.agent-mode-editor-surface__turn {
+		animation: none;
+	}
+
+	.agent-mode-editor-surface__reasoning-card,
+	.agent-mode-editor-surface__substep-chevron,
+	.agent-mode-editor-surface__reasoning-content,
+	.agent-mode-editor-surface__reasoning-inline-chevron,
+	.agent-mode-editor-surface__compact-summary-chevron,
+	.agent-mode-editor-surface__approval-inspection-chevron,
+	.agent-mode-editor-surface__process-disclosure-chevron,
+	.agent-mode-editor-surface__process-stream-chevron,
+	.agent-mode-editor-surface__patch-details-chevron,
+	.agent-mode-editor-surface__process-inspector-chevron {
+		transition: none;
+	}
+
+	.agent-mode-editor-surface__working-spinner {
+		animation-duration: 2s;
+	}
+}
+
+.agent-mode-editor-surface__working-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	padding: 2px 0;
+	border-radius: 0;
+	border: 0;
+	background: transparent;
+	color: var(--vscode-descriptionForeground);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.agent-mode-editor-surface__working-spinner {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 1.5px solid color-mix(in srgb, var(--vscode-descriptionForeground) 25%, transparent);
+	border-top-color: var(--vscode-textLink-foreground);
+	animation: agent-mode-editor-surface-spin 850ms linear infinite;
+}
+
+@keyframes agent-mode-editor-surface-spin {
+	from {
+		transform: rotate(0deg);
+	}
+
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.agent-mode-editor-surface__process-list {
+	margin: 6px 0 0;
+	padding-left: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__process-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.agent-mode-editor-surface__process-actions--summary {
+	margin-top: 8px;
+}
+
+.agent-mode-editor-surface__process-actions--approval {
+	padding-top: 2px;
+}
+
+.agent-mode-editor-surface__process-action {
+	padding: 3px 8px;
+	border: 1px solid color-mix(in srgb, var(--vscode-panel-border) 56%, transparent);
+	border-radius: 4px;
+	background: transparent;
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	line-height: 1.4;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.agent-mode-editor-surface__process-action:hover {
+	background: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 92%, transparent);
+	color: var(--vscode-foreground);
+}
+
+.agent-mode-editor-surface__process-action:focus,
+.agent-mode-editor-surface__process-action:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+	background: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 92%, transparent);
+	border-color: var(--vscode-focusBorder);
+}
+
+.agent-mode-editor-surface__process-action--primary {
+	color: var(--vscode-textLink-foreground);
+	border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 20%, var(--vscode-panel-border));
+}
+
+.agent-mode-editor-surface__process-action--utility {
+	border-color: transparent;
+	opacity: 0.82;
+}
+
+.agent-mode-editor-surface__empty {
+	padding: 14px 0;
+	border: 0;
+	border-radius: 4px;
+	color: var(--vscode-descriptionForeground);
+	background: transparent;
+}
+
+.agent-mode-editor-surface__patch-details {
+	margin-top: 8px;
+	border: 0;
+	padding: 0;
+}
+
+.agent-mode-editor-surface__patch-details-summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	list-style: none;
+}
+
+.agent-mode-editor-surface__patch-details-summary::-webkit-details-marker {
+	display: none;
+}
+
+.agent-mode-editor-surface__patch-details-label {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.agent-mode-editor-surface__patch-details-chevron {
+	width: 8px;
+	height: 8px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__patch-details[open] .agent-mode-editor-surface__patch-details-chevron {
+	transform: rotate(225deg);
+}
+
+.agent-mode-editor-surface__patch-details-content {
+	margin-top: 8px;
+	padding-left: 10px;
+	border-left: 1px solid color-mix(in srgb, var(--vscode-panel-border) 72%, transparent);
+}
+
+.agent-mode-editor-surface__composer {
+	position: sticky;
+	bottom: 0;
+	padding-top: 8px;
+	background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--vscode-editor-background) 90%, transparent) 18%, var(--vscode-editor-background) 100%);
+}
+
+.agent-mode-editor-surface__composer-shell {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 6px 8px;
+	container-type: inline-size;
+	border-radius: 6px;
+	border: 1px solid color-mix(in srgb, var(--vscode-input-border) 44%, var(--vscode-panel-border));
+	background: color-mix(in srgb, var(--vscode-input-background) 78%, var(--vscode-editor-background));
+	border-top-color: color-mix(in srgb, var(--vscode-panel-border) 58%, transparent);
+	transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.agent-mode-editor-surface__composer-shell:focus-within {
+	border-color: var(--vscode-focusBorder);
+	box-shadow: inset 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.agent-mode-editor-surface__composer-shell--running {
+	border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 22%, var(--vscode-panel-border));
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-textLink-foreground) 8%, transparent);
+}
+
+.agent-mode-editor-surface__composer-shell--warning {
+	border-color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 26%, var(--vscode-panel-border));
+	background: color-mix(in srgb, var(--vscode-editorWarning-foreground) 2%, var(--vscode-editor-background));
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-editorWarning-foreground) 7%, transparent);
+}
+
+.agent-mode-editor-surface__composer-shell--error,
+.agent-mode-editor-surface__composer-shell--offline {
+	border-color: color-mix(in srgb, var(--vscode-errorForeground) 34%, var(--vscode-panel-border));
+}
+
+.agent-mode-editor-surface__composer-input {
+	width: 100%;
+	min-height: 56px;
+	resize: vertical;
+	padding: 0;
+	border: 0;
+	outline: none !important;
+	outline-offset: 0;
+	box-shadow: none;
+	appearance: none;
+	-webkit-appearance: none;
+	background: transparent;
+	color: var(--vscode-input-foreground);
+	font-size: 13px;
+	line-height: 1.55;
+	font-family: inherit;
+}
+
+.agent-mode-editor-surface__composer-shell--warning .agent-mode-editor-surface__composer-input {
+	min-height: 44px;
+}
+
+.agent-mode-editor-surface__composer-input:focus,
+.agent-mode-editor-surface__composer-input:focus-visible {
+	outline: none !important;
+	outline-offset: 0;
+	box-shadow: none !important;
+}
+
+.agent-mode-editor-surface__composer-input::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.agent-mode-editor-surface__composer-input:disabled {
+	cursor: not-allowed;
+	opacity: 0.72;
+}
+
+.agent-mode-editor-surface__composer-banner {
+	display: block;
+	width: 100%;
+	padding: 2px 0;
+	border-radius: 0;
+	border: 0;
+	background: transparent;
+	color: var(--vscode-editorWarning-foreground);
+	font-size: 11px;
+	line-height: 1.45;
+	font-weight: 600;
+	text-align: left;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.agent-mode-editor-surface__composer-banner:hover {
+	text-decoration: underline;
+}
+
+.agent-mode-editor-surface__composer-banner:focus,
+.agent-mode-editor-surface__composer-banner:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: 2px;
+}
+
+.agent-mode-editor-surface__composer-status {
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--vscode-descriptionForeground);
+}
+
+.agent-mode-editor-surface__composer-status--running {
+	color: var(--vscode-textLink-foreground);
+}
+
+.agent-mode-editor-surface__composer-status--warning {
+	color: var(--vscode-editorWarning-foreground);
+	font-weight: 600;
+}
+
+.agent-mode-editor-surface__composer-status--error,
+.agent-mode-editor-surface__composer-status--offline {
+	color: var(--vscode-errorForeground);
+}
+
+.agent-mode-editor-surface__composer-error {
+	padding: 7px 9px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--vscode-errorForeground) 8%, transparent);
+	border: 1px solid color-mix(in srgb, var(--vscode-errorForeground) 14%, var(--vscode-panel-border));
+	color: var(--vscode-errorForeground);
+	font-size: 12px;
+	line-height: 1.55;
+}
+
+.agent-mode-editor-surface__composer-meta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	flex-wrap: nowrap;
+	min-width: 0;
+}
+
+.agent-mode-editor-surface__composer-controls {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	flex-wrap: nowrap;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.agent-mode-editor-surface__attachment-button,
+.agent-mode-context-usage {
+	flex-shrink: 0;
+}
+
+.agent-mode-editor-surface__attachment-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 22px;
+	border-radius: 4px;
+	border: 0;
+	background: transparent;
+	color: var(--vscode-descriptionForeground);
+	font-size: 16px;
+	line-height: 1;
+	padding: 0;
+	opacity: 0.86;
+	transition: background 120ms ease, opacity 120ms ease;
+}
+
+.agent-mode-editor-surface__composer-picker-host {
+	display: inline-flex;
+	align-items: center;
+	min-width: 0;
+	width: auto;
+	max-width: 220px;
+	flex-shrink: 1;
+	overflow: hidden;
+}
+
+.agent-mode-editor-surface__composer-picker-host .monaco-select-box {
+	height: 22px;
+	width: auto;
+	min-width: 0;
+	max-width: 100%;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--vscode-descriptionForeground);
+	opacity: 1;
+}
+
+.agent-mode-editor-surface__composer-picker-host .select-box-container {
+	display: inline-flex;
+	width: auto;
+	max-width: 100%;
+	border: 0;
+	background: transparent;
+}
+
+.agent-mode-editor-surface__composer-picker-host .select-box {
+	width: auto;
+	min-width: 0;
+	max-width: 100%;
+	padding: 1px 24px 1px 5px;
+	border: 0;
+	background: transparent;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.agent-mode-editor-surface__composer-picker-host .select-box:focus,
+.agent-mode-editor-surface__composer-picker-host .select-box:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+.agent-mode-editor-surface__composer-picker-host .select-box-dropdown-container {
+	width: 14px;
+}
+
+.agent-mode-editor-surface__composer-picker-host .select-box-dropdown-container .codicon {
+	font-size: 12px;
+	opacity: 0.72;
+}
+
+.context-view .monaco-select-box-dropdown-container {
+	min-width: 320px;
+	max-width: min(520px, calc(100vw - 32px));
+}
+
+.context-view .monaco-select-box-dropdown-container > .select-box-dropdown-list-container {
+	overflow-x: auto;
+}
+
+.context-view .monaco-select-box-dropdown-container > .select-box-dropdown-list-container .monaco-list .monaco-list-row {
+	min-width: max-content;
+}
+
+.context-view .monaco-select-box-dropdown-container > .select-box-dropdown-list-container .monaco-list .monaco-list-row > .option-decorator-right {
+	max-width: 240px;
+	opacity: 0.76;
+}
+
+.agent-mode-editor-surface__composer-picker-host:hover .monaco-select-box,
+.agent-mode-editor-surface__attachment-button:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+	color: var(--vscode-foreground);
+}
+
+.agent-mode-editor-surface__composer-picker-host:active .monaco-select-box,
+.agent-mode-editor-surface__attachment-button:active {
+	background: var(--vscode-toolbar-activeBackground);
+}
+
+.agent-mode-editor-surface__composer-select:focus,
+.agent-mode-editor-surface__composer-select:focus-visible,
+.agent-mode-editor-surface__attachment-button:focus,
+.agent-mode-editor-surface__attachment-button:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+.agent-mode-editor-surface__composer-select:disabled,
+.agent-mode-editor-surface__attachment-button:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.agent-mode-editor-surface__composer-actions {
+	display: flex;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.agent-mode-context-usage {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	padding: 2px 4px;
+	border-radius: 4px;
+	color: var(--vscode-descriptionForeground);
+	background: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 42%, transparent);
+	border: 1px solid transparent;
+	box-sizing: border-box;
+}
+
+.agent-mode-context-usage__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+.agent-mode-context-usage__progress {
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.agent-mode-context-usage .progress-bg {
+	fill: none;
+	stroke: var(--vscode-disabledForeground);
+	stroke-width: 4;
+	opacity: 0.5;
+}
+
+.agent-mode-context-usage .progress-arc {
+	fill: none;
+	stroke: var(--vscode-icon-foreground);
+	stroke-width: 4;
+	stroke-linecap: round;
+	transform: rotate(-90deg);
+	transform-origin: center;
+	pointer-events: none;
+}
+
+.agent-mode-context-usage.warning .progress-arc {
+	stroke: var(--vscode-editorWarning-foreground);
+}
+
+.agent-mode-context-usage.error .progress-arc {
+	stroke: var(--vscode-editorError-foreground);
+}
+
+.agent-mode-context-usage__percentage {
+	font-size: 11px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+@container (max-width: 400px) {
+	.agent-mode-editor-surface__composer-picker-host--agent {
+		display: none;
+	}
+}
+
+@container (max-width: 300px) {
+	.agent-mode-editor-surface__composer-picker-host--model {
+		display: none;
+	}
+}
+
+@container (max-width: 520px) {
+	.agent-mode-context-usage__percentage {
+		display: none;
+	}
+}
+
+@container (max-width: 420px) {
+	.agent-mode-context-usage {
+		display: none !important;
+	}
+}
+
+.agent-mode-editor-surface__action {
+	padding: 2px 4px;
+	border-radius: 4px;
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--vscode-foreground);
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.agent-mode-editor-surface__action:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.agent-mode-editor-surface__action--primary {
+	background: transparent;
+	border-color: transparent;
+	color: var(--vscode-textLink-foreground);
+}
+
+.agent-mode-editor-surface__action--primary.agent-mode-editor-surface__action--running {
+	color: var(--vscode-errorForeground);
+}
+
+.agent-mode-editor-surface__action--primary.agent-mode-editor-surface__action--warning {
+	background: transparent;
+	border-color: transparent;
+	color: color-mix(in srgb, var(--vscode-editorWarning-foreground) 72%, var(--vscode-descriptionForeground));
+	opacity: 1;
+}
+
+.agent-mode-editor-surface__action--primary.agent-mode-editor-surface__action--warning:disabled {
+	opacity: 1;
+	cursor: default;
+}
+
+.agent-mode-editor-surface__action:focus,
+.agent-mode-editor-surface__action:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+	background: color-mix(in srgb, var(--vscode-list-hoverBackground) 74%, transparent);
+	border-color: var(--vscode-focusBorder);
+}
+
+.agent-mode-editor-surface__action--primary:focus,
+.agent-mode-editor-surface__action--primary:focus-visible {
+	background: color-mix(in srgb, var(--vscode-list-hoverBackground) 74%, transparent);
+	border-color: var(--vscode-focusBorder);
+}
+
+@media (max-width: 960px) {
+	.agent-mode-editor-surface__header {
+		padding: 14px 16px 12px;
+		flex-direction: column;
+	}
+
+	.agent-mode-editor-surface__main {
+		width: calc(100% - 12px);
+		max-width: none;
+	}
+
+	.agent-mode-editor-surface__header-meta {
+		max-width: 100%;
+		justify-content: flex-start;
+	}
+
+	.agent-mode-editor-surface__main {
+		width: calc(100% - 20px);
+	}
+
+	.agent-mode-editor-surface__message {
+		width: auto;
+		max-width: 100%;
+	}
+
+	.agent-mode-editor-surface__message-row--user {
+		justify-content: flex-end;
+	}
+}

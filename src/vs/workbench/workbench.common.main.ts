@@ -208,6 +208,10 @@ import './contrib/speech/browser/speech.contribution.js';
 
 // Chat
 import './contrib/chat/browser/chat.contribution.js';
+import './contrib/agentMode/browser/agentBackendService.js';
+import './contrib/agentMode/browser/agentMode.contribution.js';
+import './contrib/agentMode/browser/agentModeEditorSurface.contribution.js';
+import './contrib/agentMode/browser/agentModeView.contribution.js';
 import './contrib/inlineChat/browser/inlineChat.contribution.js';
 import './contrib/mcp/browser/mcp.contribution.js';
 import './contrib/chat/browser/chatSessions/chatSessions.contribution.js';

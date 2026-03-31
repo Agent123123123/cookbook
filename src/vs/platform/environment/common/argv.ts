@@ -54,6 +54,7 @@ export interface NativeParsedArgs {
 	goto?: boolean;
 	'new-window'?: boolean;
 	'reuse-window'?: boolean;
+	'agent-mode'?: boolean;
 	'sessions'?: boolean;
 	locale?: string;
 	'user-data-dir'?: string;
@@ -175,4 +176,16 @@ export interface NativeParsedArgs {
 	'trace-startup-file'?: string;
 	'trace-startup-duration'?: string;
 	'xdg-portal-required-version'?: string;
+}
+
+export function shouldStartInAgentMode(args: NativeParsedArgs, enableSessionsFlag: boolean): boolean {
+	return !!args['agent-mode'] || (enableSessionsFlag && !!args['sessions']);
+}
+
+export function toAgentModeWindowArgs(args: NativeParsedArgs): NativeParsedArgs {
+	return {
+		...args,
+		'agent-mode': true,
+		sessions: false
+	};
 }

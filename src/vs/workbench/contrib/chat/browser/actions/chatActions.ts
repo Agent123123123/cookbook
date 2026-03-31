@@ -36,11 +36,9 @@ import { IOpenerService } from '../../../../../platform/opener/common/opener.js'
 import product from '../../../../../platform/product/common/product.js';
 import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
 import { ActiveEditorContext } from '../../../../common/contextkeys.js';
-import { IViewDescriptorService, ViewContainerLocation } from '../../../../common/views.js';
+import { ViewContainerLocation } from '../../../../common/views.js';
 import { ChatEntitlement, IChatEntitlementService } from '../../../../services/chat/common/chatEntitlementService.js';
-import { ACTIVE_GROUP, AUX_WINDOW_GROUP, SIDE_GROUP } from '../../../../services/editor/common/editorService.js';
 import { IHostService } from '../../../../services/host/browser/host.js';
-import { IWorkbenchLayoutService, Parts } from '../../../../services/layout/browser/layoutService.js';
 import { IPreferencesService } from '../../../../services/preferences/common/preferences.js';
 import { IViewsService } from '../../../../services/views/common/viewsService.js';
 import { EXTENSIONS_CATEGORY, IExtensionsWorkbenchService } from '../../../extensions/common/extensions.js';
@@ -62,13 +60,15 @@ import { CopilotUsageExtensionFeatureId } from '../../common/languageModelStats.
 import { ILanguageModelToolsConfirmationService } from '../../common/tools/languageModelToolsConfirmationService.js';
 import { ILanguageModelToolsService, IToolData, IToolSet, isToolSet } from '../../common/tools/languageModelToolsService.js';
 import { ChatViewId, IChatWidget, IChatWidgetService, isIChatViewViewContext } from '../chat.js';
-import { IChatEditorOptions } from '../widgetHosts/editor/chatEditor.js';
 import { ChatEditorInput, showClearEditingSessionConfirmation } from '../widgetHosts/editor/chatEditorInput.js';
 import { convertBufferToScreenshotVariable } from '../attachments/chatScreenshotContext.js';
-import { getChatSessionType, LocalChatSessionUri } from '../../common/model/chatUri.js';
+import { getChatSessionType } from '../../common/model/chatUri.js';
 import { localChatSessionType } from '../../common/chatSessionsService.js';
 import { generateUuid } from '../../../../../base/common/uuid.js';
 import { ChatViewPane } from '../widgetHosts/viewPane/chatViewPane.js';
+import { IAgentModeChatService, shouldOpenInAgentModeChat } from '../../../agentMode/browser/agentModeChatService.js';
+import { IAgentSessionService } from '../../../agentMode/browser/agentSessionService.js';
+import { IWorkbenchModeService } from '../../../agentMode/browser/agentMode.contribution.js';
 
 export const CHAT_CATEGORY = localize2('chat.category', 'Chat');
 
@@ -212,6 +212,43 @@ abstract class OpenChatGlobalAction extends Action2 {
 
 	override async run(accessor: ServicesAccessor, opts?: string | IChatViewOpenOptions): Promise<IChatAgentResult & { type?: 'confirmation' } | undefined> {
 		opts = typeof opts === 'string' ? { query: opts } : opts;
+		const workbenchModeService = accessor.get(IWorkbenchModeService);
+
+		if (shouldOpenInAgentModeChat({
+			requestedChatMode: this.mode?.kind,
+			openChatMode: typeof opts?.mode === 'string' ? opts.mode : undefined,
+			currentWorkbenchMode: workbenchModeService.mode,
+			hasComplexOptions: Boolean(
+				opts?.previousRequests?.length
+				|| opts?.attachScreenshot
+				|| opts?.attachFiles?.length
+				|| opts?.attachHistoryItemChanges?.length
+				|| opts?.attachHistoryItemChangeRanges?.length
+				|| opts?.toolIds?.length
+				|| opts?.modelSelector
+				|| opts?.toolsInclude?.length
+				|| opts?.toolsExclude?.length
+			),
+			blockOnResponse: opts?.blockOnResponse
+		})) {
+			await accessor.get(IAgentModeChatService).openChat({
+				query: opts?.query,
+				isPartialQuery: opts?.isPartialQuery,
+			});
+			return undefined;
+		}
+
+		if (workbenchModeService.mode !== 'agent') {
+			await accessor.get(IViewsService).openView(ChatViewId, true);
+			const agentSessionService = accessor.get(IAgentSessionService);
+			if (opts?.query !== undefined) {
+				agentSessionService.updateComposerDraft(opts.query);
+				if (!opts.isPartialQuery && opts.query.trim()) {
+					await agentSessionService.sendComposerPrompt();
+				}
+			}
+			return undefined;
+		}
 
 		const chatService = accessor.get(IChatService);
 		const widgetService = accessor.get(IChatWidgetService);
@@ -600,41 +637,21 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const layoutService = accessor.get(IWorkbenchLayoutService);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode === 'agent') {
+				await accessor.get(IAgentModeChatService).toggleChat();
+				return;
+			}
+
 			const viewsService = accessor.get(IViewsService);
-			const viewDescriptorService = accessor.get(IViewDescriptorService);
-			const widgetService = accessor.get(IChatWidgetService);
-
-			const chatLocation = viewDescriptorService.getViewLocationById(ChatViewId);
-			const chatVisible = viewsService.isViewVisible(ChatViewId);
-			if (chatVisible) {
-				this.updatePartVisibility(layoutService, chatLocation, false);
-			} else {
-				this.updatePartVisibility(layoutService, chatLocation, true);
-				(await widgetService.revealWidget())?.focusInput();
-			}
-		}
-
-		private updatePartVisibility(layoutService: IWorkbenchLayoutService, location: ViewContainerLocation | null, visible: boolean): void {
-			let part: Parts.PANEL_PART | Parts.SIDEBAR_PART | Parts.AUXILIARYBAR_PART | undefined;
-			switch (location) {
-				case ViewContainerLocation.Panel:
-					part = Parts.PANEL_PART;
-					break;
-				case ViewContainerLocation.Sidebar:
-					part = Parts.SIDEBAR_PART;
-					break;
-				case ViewContainerLocation.AuxiliaryBar:
-					part = Parts.AUXILIARYBAR_PART;
-					break;
+			if (viewsService.isViewVisible(ChatViewId)) {
+				viewsService.closeView(ChatViewId);
+				return;
 			}
 
-			if (part) {
-				layoutService.setPartHidden(!visible, part);
-			}
+			await accessor.get(IChatWidgetService).revealWidget();
 		}
 	});
-
 
 	registerAction2(class NewChatEditorAction extends Action2 {
 		constructor() {
@@ -668,8 +685,14 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const widgetService = accessor.get(IChatWidgetService);
-			await widgetService.openSession(LocalChatSessionUri.getNewSessionUri(), ACTIVE_GROUP, { pinned: true } satisfies IChatEditorOptions);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode !== 'agent') {
+				accessor.get(IAgentSessionService).createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				return;
+			}
+
+			await accessor.get(IAgentModeChatService).openChat({ newSession: true });
 		}
 	});
 
@@ -692,8 +715,14 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const widgetService = accessor.get(IChatWidgetService);
-			await widgetService.openSession(LocalChatSessionUri.getNewSessionUri(), ACTIVE_GROUP, { pinned: true } satisfies IChatEditorOptions);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode !== 'agent') {
+				accessor.get(IAgentSessionService).createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				return;
+			}
+
+			await accessor.get(IAgentModeChatService).openChat({ newSession: true });
 		}
 	});
 
@@ -716,8 +745,14 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const widgetService = accessor.get(IChatWidgetService);
-			await widgetService.openSession(LocalChatSessionUri.getNewSessionUri(), ACTIVE_GROUP, { pinned: true } satisfies IChatEditorOptions);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode !== 'agent') {
+				accessor.get(IAgentSessionService).createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				return;
+			}
+
+			await accessor.get(IAgentModeChatService).openChat({ newSession: true });
 		}
 	});
 
@@ -740,8 +775,14 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const widgetService = accessor.get(IChatWidgetService);
-			await widgetService.openSession(LocalChatSessionUri.getNewSessionUri(), ACTIVE_GROUP, { pinned: true } satisfies IChatEditorOptions);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode !== 'agent') {
+				accessor.get(IAgentSessionService).createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				return;
+			}
+
+			await accessor.get(IAgentModeChatService).openChat({ newSession: true });
 		}
 	});
 
@@ -757,8 +798,14 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const widgetService = accessor.get(IChatWidgetService);
-			await widgetService.openSession(LocalChatSessionUri.getNewSessionUri(), SIDE_GROUP, { pinned: true } satisfies IChatEditorOptions);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode !== 'agent') {
+				accessor.get(IAgentSessionService).createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				return;
+			}
+
+			await accessor.get(IAgentModeChatService).openChat({ newSession: true });
 		}
 	});
 
@@ -783,8 +830,14 @@ export function registerChatActions() {
 		}
 
 		async run(accessor: ServicesAccessor) {
-			const widgetService = accessor.get(IChatWidgetService);
-			await widgetService.openSession(LocalChatSessionUri.getNewSessionUri(), AUX_WINDOW_GROUP, { pinned: true, auxiliary: { compact: true, bounds: { width: 640, height: 640 } } } satisfies IChatEditorOptions);
+			const workbenchModeService = accessor.get(IWorkbenchModeService);
+			if (workbenchModeService.mode !== 'agent') {
+				accessor.get(IAgentSessionService).createNewSession();
+				await accessor.get(IViewsService).openView(ChatViewId, true);
+				return;
+			}
+
+			await accessor.get(IAgentModeChatService).openChat({ newSession: true });
 		}
 	});
 

@@ -7,7 +7,7 @@ import assert from 'assert';
 import * as sinon from 'sinon';
 import type * as vscode from 'vscode';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { Event } from '../../../../base/common/event.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
 import { asSinonMethodStub } from '../../../../base/test/common/sinonUtils.js';
@@ -24,7 +24,7 @@ import { IAgentSessionsModel } from '../../../contrib/chat/browser/agentSessions
 import { IAgentSessionsService } from '../../../contrib/chat/browser/agentSessions/agentSessionsService.js';
 import { ChatSessionsService } from '../../../contrib/chat/browser/chatSessions/chatSessions.contribution.js';
 import { IChatProgress, IChatProgressMessage, IChatService } from '../../../contrib/chat/common/chatService/chatService.js';
-import { IChatSessionProviderOptionGroup, IChatSessionRequestHistoryItem, IChatSessionsService } from '../../../contrib/chat/common/chatSessionsService.js';
+import { ChatSessionStatus, IChatSessionItem, IChatSessionItemController, IChatSessionItemsDelta, IChatSessionProviderOptionGroup, IChatSessionRequestHistoryItem, IChatSessionsService, localChatSessionType } from '../../../contrib/chat/common/chatSessionsService.js';
 import { ChatAgentLocation } from '../../../contrib/chat/common/constants.js';
 import { LocalChatSessionUri } from '../../../contrib/chat/common/model/chatUri.js';
 import { IChatAgentRequest, IChatAgentResult } from '../../../contrib/chat/common/participants/chatAgents.js';
@@ -613,6 +613,42 @@ suite('MainThreadChatSessions', function () {
 		assert.strictEqual(session.isCompleteObs.get(), true);
 
 		mainThread.$unregisterChatSessionContentProvider(1);
+	});
+
+	test('disposing session item controller clears in-progress state', async function () {
+		const onDidChangeChatSessionItems = disposables.add(new Emitter<IChatSessionItemsDelta>());
+		const resource = URI.from({ scheme: localChatSessionType, path: '/test-session' });
+		const items: readonly IChatSessionItem[] = [{
+			resource,
+			label: 'Test Session',
+			status: ChatSessionStatus.InProgress,
+			timing: {
+				created: 1,
+				lastRequestStarted: 2,
+				lastRequestEnded: undefined,
+			},
+		}];
+		const controller: IChatSessionItemController = {
+			onDidChangeChatSessionItems: onDidChangeChatSessionItems.event,
+			get items() {
+				return items;
+			},
+			async refresh() { }
+		};
+
+		const registration = disposables.add(chatSessionsService.registerChatSessionItemController(localChatSessionType, controller));
+
+		const inProgressPromise = Event.toPromise(chatSessionsService.onDidChangeInProgress);
+		onDidChangeChatSessionItems.fire({ addedOrUpdated: items });
+		await inProgressPromise;
+
+		assert.deepStrictEqual(chatSessionsService.getInProgress(), [{ chatSessionType: localChatSessionType, count: 1 }]);
+
+		const clearedPromise = Event.toPromise(chatSessionsService.onDidChangeInProgress);
+		registration.dispose();
+		await clearedPromise;
+
+		assert.deepStrictEqual(chatSessionsService.getInProgress(), []);
 	});
 
 	test('integration with multiple request/response pairs', async function () {

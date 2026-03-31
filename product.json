@@ -155,5 +155,23 @@
 		"github-enterprise": [
 			"GitHub.copilot-chat"
 		]
+	},
+	"remoteExtensionTips": {
+		"wsl": {
+			"friendlyName": "WSL",
+			"extensionId": "ms-vscode-remote.remote-wsl"
+		},
+		"ssh-remote": {
+			"friendlyName": "SSH",
+			"extensionId": "ms-vscode-remote.remote-ssh"
+		},
+		"dev-container": {
+			"friendlyName": "Dev Containers",
+			"extensionId": "ms-vscode-remote.remote-containers"
+		},
+		"attached-container": {
+			"friendlyName": "Dev Containers",
+			"extensionId": "ms-vscode-remote.remote-containers"
+		}
 	}
 }

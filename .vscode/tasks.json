@@ -235,6 +235,7 @@
 				"command": ".\\scripts\\code.bat"
 			},
 			"args": [
+				"--extensions-dir=${userHome}/.vscode/extensions",
 				"--sessions"
 			],
 			"problemMatcher": []
@@ -247,6 +248,7 @@
 				"command": "npm run transpile-client && .\\scripts\\code.bat"
 			},
 			"args": [
+				"--extensions-dir=${userHome}/.vscode/extensions",
 				"--sessions"
 			],
 			"inSessions": true,

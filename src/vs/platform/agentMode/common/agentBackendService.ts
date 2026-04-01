@@ -207,7 +207,7 @@ export namespace OpenCodeBackendAPI {
 	}
 }
 
-export const enum AgentBackendLocation {
+export enum AgentBackendLocation {
 	Local = 'local',
 	Remote = 'remote',
 }

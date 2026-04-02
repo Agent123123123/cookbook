@@ -38,6 +38,7 @@ import { IEncryptionMainService } from '../../platform/encryption/common/encrypt
 import { EncryptionMainService } from '../../platform/encryption/electron-main/encryptionMainService.js';
 import { NativeBrowserElementsMainService, INativeBrowserElementsMainService } from '../../platform/browserElements/electron-main/nativeBrowserElementsMainService.js';
 import { AgentBackendChannel, AgentBackendChannelName } from '../../platform/agentMode/common/agentBackendIpc.js';
+import { AgentBackendLocation } from '../../platform/agentMode/common/agentBackendService.js';
 import { AgentBackendMainService } from '../../platform/agentMode/electron-main/agentBackendMainService.js';
 import { ipcBrowserViewChannelName } from '../../platform/browserView/common/browserView.js';
 import { ipcBrowserViewGroupChannelName } from '../../platform/browserView/common/browserViewGroup.js';

@@ -11,6 +11,20 @@ export interface IAgentModelSelection {
 	readonly modelID: string;
 }
 
+export const enum AgentBackendLocation {
+	Local = 'local',
+	Remote = 'remote',
+}
+
+export interface IAgentBackendRuntimeMetadata {
+	readonly location: AgentBackendLocation;
+	readonly requestedLocation: AgentBackendLocation;
+	readonly remoteAuthority?: string;
+	readonly ownedByCurrentWindow: boolean;
+	readonly connectionLabel: string;
+	readonly eventStreamAvailable: boolean;
+}
+
 export namespace OpenCodeBackendAPI {
 	export interface Config {
 		readonly agent?: Record<string, unknown>;
@@ -212,12 +226,15 @@ export interface IAgentBackendInitializationData {
 	readonly config: OpenCodeBackendAPI.Config;
 	readonly providersConfig: OpenCodeBackendAPI.ProvidersConfigResponse;
 	readonly agents: readonly OpenCodeBackendAPI.AgentInfo[];
+	readonly runtime: IAgentBackendRuntimeMetadata;
 }
 
 export const IAgentBackendService = createDecorator<IAgentBackendService>('agentBackendService');
 
 export interface IAgentBackendService {
 	readonly _serviceBrand: undefined;
+	readonly location: AgentBackendLocation;
+	readonly ownedByCurrentWindow: boolean;
 	readonly connectionLabel: string;
 	readonly eventStreamAvailable: boolean;
 	readonly onDidReceiveEvent: Event<OpenCodeBackendAPI.SSEEvent>;

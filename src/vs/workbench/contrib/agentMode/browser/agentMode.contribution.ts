@@ -21,11 +21,11 @@ import { IPaneCompositePartService } from '../../../services/panecomposite/brows
 import { ViewContainerLocation } from '../../../common/views.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
+import { INativeEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { NativeParsedArgs } from '../../../../platform/environment/common/argv.js';
 import { ChatContextKeys } from '../../chat/common/actions/chatContextKeys.js';
 import { IAgentSessionService } from './agentSessionService.js';
 import { AGENT_MODE_SESSIONS_VIEW_CONTAINER_ID, AGENT_MODE_VIEW_CONTAINER_ID } from './agentModeView.contribution.js';
-import { IWorkbenchEnvironmentService } from '../../../services/environment/common/environmentService.js';
 
 const WORKBENCH_MODE_STORAGE_KEY = 'workbench.mode';
 const WORKBENCH_MODE_TITLEBAR_MENU = new MenuId('WorkbenchModeTitleBarMenu');
@@ -77,7 +77,7 @@ class WorkbenchModeService extends Disposable implements IWorkbenchModeService {
 	constructor(
 		@IStorageService private readonly _storageService: IStorageService,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService,
+		@INativeEnvironmentService environmentService: INativeEnvironmentService,
 	) {
 		super();
 

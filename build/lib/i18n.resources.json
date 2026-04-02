@@ -543,6 +543,10 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/contrib/agentMode",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/services/issue",
 			"project": "vscode-workbench"
 		},

@@ -6,11 +6,13 @@
 import { Event } from '../../../base/common/event.js';
 import { Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
 import { IChannel, IConnectionHub, IServerChannel } from '../../../base/parts/ipc/common/ipc.js';
-import { IAgentBackendInitializationData, IAgentBackendService, IAgentModelSelection, OpenCodeBackendAPI } from './agentBackendService.js';
+import { AgentBackendLocation, IAgentBackendInitializationData, IAgentBackendService, IAgentModelSelection, OpenCodeBackendAPI } from './agentBackendService.js';
 
 export const AgentBackendChannelName = 'agentModeBackend';
 
 interface IAgentBackendStatusDto {
+	location: AgentBackendLocation;
+	ownedByCurrentWindow: boolean;
 	connectionLabel: string;
 	eventStreamAvailable: boolean;
 }
@@ -48,6 +50,8 @@ export class AgentBackendChannel<TContext> extends Disposable implements IServer
 		switch (command) {
 			case '_getStatus':
 				return Promise.resolve({
+					location: service.location,
+					ownedByCurrentWindow: service.ownedByCurrentWindow,
 					connectionLabel: service.connectionLabel,
 					eventStreamAvailable: service.eventStreamAvailable,
 				} satisfies IAgentBackendStatusDto as T);
@@ -97,10 +101,23 @@ export class AgentBackendChannel<TContext> extends Disposable implements IServer
 export class AgentBackendChannelClient extends Disposable implements IAgentBackendService {
 	declare readonly _serviceBrand: undefined;
 
-	private readonly _status: IAgentBackendStatusDto = { connectionLabel: 'OpenCode', eventStreamAvailable: false };
+	private readonly _status: IAgentBackendStatusDto = {
+		location: AgentBackendLocation.Local,
+		ownedByCurrentWindow: false,
+		connectionLabel: 'OpenCode',
+		eventStreamAvailable: false,
+	};
 
 	readonly onDidReceiveEvent: Event<OpenCodeBackendAPI.SSEEvent>;
 	readonly onDidDisconnect: Event<void>;
+
+	get location(): AgentBackendLocation {
+		return this._status.location;
+	}
+
+	get ownedByCurrentWindow(): boolean {
+		return this._status.ownedByCurrentWindow;
+	}
 
 	get connectionLabel(): string {
 		return this._status.connectionLabel;
@@ -159,6 +176,8 @@ export class AgentBackendChannelClient extends Disposable implements IAgentBacke
 
 	private async _refreshStatus(): Promise<void> {
 		const status = await this._channel.call<IAgentBackendStatusDto>('_getStatus');
+		this._status.location = status.location;
+		this._status.ownedByCurrentWindow = status.ownedByCurrentWindow;
 		this._status.connectionLabel = status.connectionLabel;
 		this._status.eventStreamAvailable = status.eventStreamAvailable;
 	}

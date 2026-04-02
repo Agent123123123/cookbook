@@ -48,3 +48,12 @@ dist
 .agents/skills/.local/
 .claude/skills/.local/
 .github/skills/.local/
+
+# Temporary/generated files
+.tmp/
+.copilot-temp/
+.codex-ui-*.log
+.codex-ui-*.err.log
+.ui-validate-profile-*/
+playwright-output/
+src/vs/workbench/workbench.web.main.css

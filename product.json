@@ -1,6 +1,4 @@
 {
-	"commit": "e5e706fe1fe52c142cf210c921bc21a447b9438b",
-	"quality": "stable",
 	"nameShort": "Code - OSS",
 	"nameLong": "Code - OSS",
 	"applicationName": "code-oss",
@@ -157,6 +155,17 @@
 		"github-enterprise": [
 			"GitHub.copilot-chat"
 		]
+	},
+	"extensionsGallery": {
+		"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery",
+		"searchUrl": "https://marketplace.visualstudio.com/_apis/public/gallery/searchrelevancy/extensionquery",
+		"cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",
+		"itemUrl": "https://marketplace.visualstudio.com/items",
+		"publisherUrl": "https://marketplace.visualstudio.com/publishers",
+		"resourceUrlTemplate": "https://{publisher}.vscode-unpkg.net/{publisher}/{name}/{version}/{path}",
+		"extensionUrlTemplate": "https://{publisher}.vscode-unpkg.net/{publisher}/{name}/{version}/{path}",
+		"controlUrl": "https://az764295.vo.msecnd.net/extensions/marketplace.json",
+		"nlsBaseUrl": "https://www.vscode-unpkg.net/_lp/"
 	},
 	"remoteExtensionTips": {
 		"wsl": {

@@ -730,6 +730,12 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental', 'advanced'],
 			included: product.quality !== 'stable',
 		},
+		[ChatConfiguration.AgentOpencodePath]: {
+			type: ['string', 'null'],
+			default: null,
+			markdownDescription: nls.localize('agentMode.opencode.path', "The path to the OpenCode executable. When set, this path is used instead of searching the system PATH. This is particularly useful in remote (SSH/WSL) scenarios where OpenCode is installed in a non-standard location. When `null`, common install locations such as `~/.opencode/bin/opencode` are tried as a fallback."),
+			scope: ConfigurationScope.MACHINE,
+		},
 		[ChatConfiguration.PlanAgentDefaultModel]: {
 			type: 'string',
 			description: nls.localize('chat.planAgent.defaultModel.description', "Select the default language model to use for the Plan agent from the available providers."),

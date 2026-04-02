@@ -6,6 +6,7 @@
 import { Emitter } from '../../base/common/event.js';
 import { Disposable, MutableDisposable, toDisposable } from '../../base/common/lifecycle.js';
 import { SSEParser } from '../../base/common/sseParser.js';
+import { IConfigurationService } from '../../platform/configuration/common/configuration.js';
 import { ILogService } from '../../platform/log/common/log.js';
 import { AgentBackendLocation, IAgentBackendInitializationData, IAgentBackendRuntimeMetadata, IAgentBackendService, IAgentModelSelection, OpenCodeBackendAPI } from '../../platform/agentMode/common/agentBackendService.js';
 import { OpenCodeClient } from '../../platform/agentMode/node/opencodeClient.js';
@@ -49,9 +50,11 @@ export class AgentBackendRemoteService extends Disposable implements IAgentBacke
 
 	constructor(
 		@ILogService private readonly _logService: ILogService,
+		@IConfigurationService private readonly _configurationService: IConfigurationService,
 	) {
 		super();
-		this._processManager = this._register(new OpenCodeProcessManager(this._logService));
+		const opencodePath = this._configurationService.getValue<string | null>('agentMode.opencode.path') ?? undefined;
+		this._processManager = this._register(new OpenCodeProcessManager(this._logService, opencodePath ? { command: opencodePath } : undefined));
 		this._register(this._processManager.onDidChangeState(state => {
 			if (state === OpenCodeProcessState.Failed || state === OpenCodeProcessState.Stopped) {
 				this._client = undefined;
@@ -161,10 +164,9 @@ export class AgentBackendRemoteService extends Disposable implements IAgentBacke
 						return;
 					}
 
-					const backendEvent: OpenCodeBackendAPI.SSEEvent = {
-						directory: parsed.directory,
-						payload: parsed.payload,
-					};
+					const backendEvent = ('type' in parsed && typeof parsed.type === 'string')
+						? parsed as OpenCodeBackendAPI.SSEEvent
+						: { ...parsed, type: event.type } as OpenCodeBackendAPI.SSEEvent;
 
 					this._onDidReceiveEvent.fire(backendEvent);
 				} catch (error) {

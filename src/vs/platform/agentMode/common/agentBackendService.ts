@@ -207,34 +207,17 @@ export namespace OpenCodeBackendAPI {
 	}
 }
 
-export enum AgentBackendLocation {
-	Local = 'local',
-	Remote = 'remote',
-}
-
-export interface IAgentBackendRuntimeMetadata {
-	readonly location: AgentBackendLocation;
-	readonly requestedLocation: AgentBackendLocation;
-	readonly remoteAuthority?: string;
-	readonly ownedByCurrentWindow: boolean;
-	readonly connectionLabel: string;
-	readonly eventStreamAvailable: boolean;
-}
-
 export interface IAgentBackendInitializationData {
 	readonly health: { healthy: boolean; version: string };
 	readonly config: OpenCodeBackendAPI.Config;
 	readonly providersConfig: OpenCodeBackendAPI.ProvidersConfigResponse;
 	readonly agents: readonly OpenCodeBackendAPI.AgentInfo[];
-	readonly runtime: IAgentBackendRuntimeMetadata;
 }
 
 export const IAgentBackendService = createDecorator<IAgentBackendService>('agentBackendService');
 
 export interface IAgentBackendService {
 	readonly _serviceBrand: undefined;
-	readonly location: AgentBackendLocation;
-	readonly ownedByCurrentWindow: boolean;
 	readonly connectionLabel: string;
 	readonly eventStreamAvailable: boolean;
 	readonly onDidReceiveEvent: Event<OpenCodeBackendAPI.SSEEvent>;

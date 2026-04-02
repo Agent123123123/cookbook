@@ -38,7 +38,6 @@ import { IEncryptionMainService } from '../../platform/encryption/common/encrypt
 import { EncryptionMainService } from '../../platform/encryption/electron-main/encryptionMainService.js';
 import { NativeBrowserElementsMainService, INativeBrowserElementsMainService } from '../../platform/browserElements/electron-main/nativeBrowserElementsMainService.js';
 import { AgentBackendChannel, AgentBackendChannelName } from '../../platform/agentMode/common/agentBackendIpc.js';
-import { AgentBackendLocation } from '../../platform/agentMode/common/agentBackendService.js';
 import { AgentBackendMainService } from '../../platform/agentMode/electron-main/agentBackendMainService.js';
 import { ipcBrowserViewChannelName } from '../../platform/browserView/common/browserView.js';
 import { ipcBrowserViewGroupChannelName } from '../../platform/browserView/common/browserViewGroup.js';
@@ -1335,12 +1334,14 @@ export class CodeApplication extends Disposable {
 		mainProcessElectronServer.registerChannel(ipcUtilityProcessWorkerChannelName, utilityProcessWorkerChannel);
 	}
 
-	private async resolveAgentBackendLaunchContext(ctx: string, windowsMainService: IWindowsMainService, workspacesManagementMainService: IWorkspacesManagementMainService): Promise<{ cwd?: string; requestedLocation: AgentBackendLocation; remoteAuthority?: string }> {
+	private async resolveAgentBackendLaunchContext(ctx: string, windowsMainService: IWindowsMainService, workspacesManagementMainService: IWorkspacesManagementMainService): Promise<{ cwd?: string; requestedLocation: AgentBackendLocation; remoteAuthority?: string; opencodePath?: string }> {
 		const windowId = CodeApplication.parseWindowContext(ctx);
+		const opencodePath = this.configurationService.getValue<string | null>('agentMode.opencode.path') ?? undefined;
 		const fallback = {
 			cwd: process.cwd(),
 			requestedLocation: AgentBackendLocation.Local,
 			remoteAuthority: undefined,
+			opencodePath,
 		};
 		if (typeof windowId !== 'number') {
 			return fallback;
@@ -1355,14 +1356,14 @@ export class CodeApplication extends Disposable {
 		}
 
 		if (hasKey(workspace, { uri: true }) && workspace.uri.scheme === Schemas.file) {
-			return { cwd: workspace.uri.fsPath, requestedLocation, remoteAuthority };
+			return { cwd: workspace.uri.fsPath, requestedLocation, remoteAuthority, opencodePath };
 		}
 
 		if (hasKey(workspace, { configPath: true }) && workspace.configPath.scheme === Schemas.file) {
 			const resolvedWorkspace = await workspacesManagementMainService.resolveLocalWorkspace(workspace.configPath);
 			const firstFolder = resolvedWorkspace?.folders[0]?.uri;
 			if (firstFolder?.scheme === Schemas.file) {
-				return { cwd: firstFolder.fsPath, requestedLocation, remoteAuthority };
+				return { cwd: firstFolder.fsPath, requestedLocation, remoteAuthority, opencodePath };
 			}
 		}
 

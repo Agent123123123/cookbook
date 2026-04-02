@@ -4,10 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import { homedir } from 'os';
 import { timeout } from '../../../base/common/async.js';
 import { Emitter } from '../../../base/common/event.js';
 import { MutableDisposable, Disposable, DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
-import { IProcessEnvironment } from '../../../base/common/platform.js';
+import { join } from '../../../base/common/path.js';
+import { isWindows, IProcessEnvironment } from '../../../base/common/platform.js';
 import { findFreePort } from '../../../base/node/ports.js';
 import { findExecutable, killTree } from '../../../base/node/processes.js';
 import { ILogService } from '../../log/common/log.js';
@@ -27,6 +29,7 @@ export interface IOpenCodeProcessConnection {
 export interface IOpenCodeProcessStartOptions {
 	readonly cwd?: string;
 	readonly env?: IProcessEnvironment;
+	readonly command?: string;
 }
 
 export interface IOpenCodeProcessManagerOptions {
@@ -114,8 +117,26 @@ export class OpenCodeProcessManager extends Disposable {
 			OPENCODE_CLIENT: options?.env?.OPENCODE_CLIENT ?? process.env['OPENCODE_CLIENT'] ?? 'vscode',
 		};
 		const cwd = options?.cwd ?? process.cwd();
-		const command = env['OPENCODE_PATH'] || this._options.command || 'opencode';
-		const resolvedExecutable = await (this._options.findExecutable ?? findExecutable)(command, cwd, undefined, env);
+		const command = env['OPENCODE_PATH'] || options?.command || this._options.command || 'opencode';
+		const resolve = this._options.findExecutable ?? findExecutable;
+		let resolvedExecutable = await resolve(command, cwd, undefined, env);
+
+		// When no explicit path was configured and the bare 'opencode' was not
+		// found on PATH, try well-known install locations as a fallback.
+		if (!resolvedExecutable && command === 'opencode') {
+			const home = homedir();
+			const fallbackPaths = isWindows
+				? [join(home, '.opencode', 'bin', 'opencode.exe')]
+				: [join(home, '.opencode', 'bin', 'opencode'), join(home, '.local', 'bin', 'opencode')];
+			for (const candidate of fallbackPaths) {
+				const found = await resolve(candidate, cwd, undefined, env);
+				if (found) {
+					this._logService.info(`[AgentMode] OpenCode not found in PATH; using fallback location: ${found}`);
+					resolvedExecutable = found;
+					break;
+				}
+			}
+		}
 
 		if (!resolvedExecutable) {
 			if (this._options.fallbackBaseUrl) {

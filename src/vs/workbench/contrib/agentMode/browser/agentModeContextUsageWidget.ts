@@ -49,9 +49,7 @@ class CircularProgressIndicator {
 	}
 }
 
-import { safeIntl } from '../../../../base/common/date.js';
-
-const numberFormatter = safeIntl.NumberFormat();
+const numberFormatter = new Intl.NumberFormat();
 
 export class AgentModeContextUsageWidget {
 
@@ -90,8 +88,8 @@ export class AgentModeContextUsageWidget {
 			'agentModeContextUsageAriaLabel',
 			"Context window usage: {0}% ({1} of {2} tokens)",
 			roundedPercentage,
-			numberFormatter.value.format(contextUsage.usedTokens),
-			numberFormatter.value.format(contextUsage.totalContextWindow)
+			numberFormatter.format(contextUsage.usedTokens),
+			numberFormatter.format(contextUsage.totalContextWindow)
 		);
 
 		this._progressIndicator.setProgress(percentage);

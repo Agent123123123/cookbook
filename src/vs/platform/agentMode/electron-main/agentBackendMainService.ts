@@ -17,6 +17,7 @@ export interface IAgentBackendLaunchContext {
 	readonly env?: IProcessEnvironment;
 	readonly requestedLocation: AgentBackendLocation;
 	readonly remoteAuthority?: string;
+	readonly opencodePath?: string;
 }
 
 export class AgentBackendMainService extends Disposable implements IAgentBackendService {
@@ -128,7 +129,11 @@ export class AgentBackendMainService extends Disposable implements IAgentBackend
 		if (launchContext.requestedLocation === AgentBackendLocation.Remote) {
 			this._logService.info(`[AgentMode] Remote OpenCode backend requested for authority '${launchContext.remoteAuthority ?? 'unknown'}'. The renderer should route to the remote server channel; this main-process backend serves as a local fallback.`);
 		}
-		const connection = await this._processManager.start(launchContext);
+		const connection = await this._processManager.start({
+			cwd: launchContext.cwd,
+			env: launchContext.env,
+			command: launchContext.opencodePath,
+		});
 		this._client = new OpenCodeClient(connection.baseUrl);
 		this._eventStreamBaseUrl = connection.baseUrl;
 		return this._client;
@@ -171,10 +176,9 @@ export class AgentBackendMainService extends Disposable implements IAgentBackend
 						return;
 					}
 
-					const backendEvent: OpenCodeBackendAPI.SSEEvent = {
-						directory: parsed.directory,
-						payload: parsed.payload,
-					};
+					const backendEvent = ('type' in parsed && typeof parsed.type === 'string')
+						? parsed as OpenCodeBackendAPI.SSEEvent
+						: { ...parsed, type: event.type } as OpenCodeBackendAPI.SSEEvent;
 
 					this._onDidReceiveEvent.fire(backendEvent);
 				} catch (error) {

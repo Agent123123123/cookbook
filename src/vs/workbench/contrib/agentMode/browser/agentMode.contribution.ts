@@ -21,6 +21,7 @@ import { IPaneCompositePartService } from '../../../services/panecomposite/brows
 import { ViewContainerLocation } from '../../../common/views.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
+import { NativeParsedArgs } from '../../../../platform/environment/common/argv.js';
 import { ChatContextKeys } from '../../chat/common/actions/chatContextKeys.js';
 import { IAgentSessionService } from './agentSessionService.js';
 import { AGENT_MODE_SESSIONS_VIEW_CONTAINER_ID, AGENT_MODE_VIEW_CONTAINER_ID } from './agentModeView.contribution.js';
@@ -55,8 +56,8 @@ export interface IWorkbenchModeService {
 
 export const IWorkbenchModeService = createDecorator<IWorkbenchModeService>('workbenchModeService');
 
-export function getInitialWorkbenchMode(storedMode: WorkbenchMode, args?: { 'agent-mode'?: boolean }): WorkbenchMode {
-	return args?.['agent-mode'] ? 'agent' : storedMode;
+export function getInitialWorkbenchMode(storedMode: WorkbenchMode, args: Pick<NativeParsedArgs, 'agent-mode'>): WorkbenchMode {
+	return args['agent-mode'] ? 'agent' : storedMode;
 }
 
 class WorkbenchModeService extends Disposable implements IWorkbenchModeService {
@@ -80,7 +81,7 @@ class WorkbenchModeService extends Disposable implements IWorkbenchModeService {
 	) {
 		super();
 
-		this._mode = getInitialWorkbenchMode(this._readStoredMode(), (environmentService as { args?: { 'agent-mode'?: boolean } }).args);
+		this._mode = getInitialWorkbenchMode(this._readStoredMode(), environmentService.args);
 		this._modeContext = WorkbenchModeContext.bindTo(contextKeyService);
 		this._agentModeContext = WorkbenchAgentModeContext.bindTo(contextKeyService);
 		this._updateContexts();

@@ -76,10 +76,14 @@ function fromLocal(extensionPath: string, forWeb: boolean, _disableMangle: boole
 
 	if (hasEsbuild) {
 		// Esbuild only does bundling so we still want to run a separate type check step
-		input = es.merge(
-			fromLocalEsbuild(extensionPath, esbuildConfigFileName),
-			...getBuildRootsForExtension(extensionPath).map(root => typeCheckExtensionStream(root, forWeb)),
-		);
+		if (process.env['SKIP_TSGO_TYPECHECK']) {
+			input = fromLocalEsbuild(extensionPath, esbuildConfigFileName);
+		} else {
+			input = es.merge(
+				fromLocalEsbuild(extensionPath, esbuildConfigFileName),
+				...getBuildRootsForExtension(extensionPath).map(root => typeCheckExtensionStream(root, forWeb)),
+			);
+		}
 		isBundled = true;
 	} else {
 		input = fromLocalNormal(extensionPath);
